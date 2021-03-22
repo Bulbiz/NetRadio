@@ -7,10 +7,10 @@
 #include <sys/socket.h>
 #include <pthread.h>
 
-#define MAX_DATA 100
 #define MAX_DIFFUSEUR 50
-#define ID 10
-#define PORT 20
+#define ID 8
+#define PORT 4
+#define IP 15
 
 //adresse ip et descripteur du client
 struct client {
@@ -20,10 +20,11 @@ struct client {
 
 typedef struct diffuseur {
     char id[ID];
-    u_int32_t ip1;
+    char ip1[IP];
     char port1[PORT];
-    u_int32_t ip2;
+    char ip2 [IP];
     char port2[PORT];
+    int index;
 }diffuseur;
 
 
@@ -31,6 +32,13 @@ typedef struct diffuseur {
 
 diffuseur list_diffuseur [MAX_DIFFUSEUR];
 
+int diffuseurPresent (){
+    int count = 0;
+    for (int i = 0; i < MAX_DIFFUSEUR; i++)
+        if ( &list_diffuseur[i].id != -1)
+            count ++;
+    return count;
+}
 
 void*communication(void *arg){
 
@@ -38,21 +46,56 @@ void*communication(void *arg){
     struct client * utilisateur = (struct client *)arg;
     int descripteur = utilisateur -> descripteur;
 
-    //buff pour le message 
-    char buff[MAX_DATA + 4];
-    memset(buff,'\0',MAX_DATA + 4);
+    //buff pour le message + REGI
+    char buff[PORT*2 + ID*2 + IP*2 + 5 + 4];
+    memset(buff,'\0',PORT*2 + ID*2 + IP*2 + 5 + 4);
+
+    int nbDiffuseur = 0;
+
+    char buffDiffuseur [PORT*2 + ID*2 + IP*2 + 5 + 4];
+    memset(buffDiffuseur,'\0',PORT*2 + ID*2 + IP*2 + 5 + 4);
+
+    char envoieNumDiff [5 + 2];
+    memset(envoieNumDiff,'\0', 5 + 2);
 
     while (1){
-        memset(buff,'\0',MAX_DATA + 4);
+        memset(buff,'\0',PORT*2 + ID*2 + IP*2 + 5 + 4);
         //reception du message dans le buff
-        recv(descripteur,buff,(MAX_DATA + 4)*sizeof(char),0);
+        recv(descripteur,buff,(PORT*2 + ID*2 + IP*2 + 5 + 4)*sizeof(char),0);
 
         //condition REGI
         if(strncmp(buff, "REGI ", strlen("REGI ")) == 0){
 
         //condition LIST
         }else if (strncmp(buff, "LIST", strlen("LIST")) == 0){
-            
+            memset(envoieNumDiff,'\0', 5 + 2);
+            nbDiffuseur = diffuseurPresent();
+            memcpy(envoieNumDiff, "LINB ", strlen("LINB "));
+            char str[2];
+            sprintf(str, "%i", nbDiffuseur);
+            memcpy(envoieNumDiff + strlen("LINB "), str, 2);
+            send(descripteur,envoieNumDiff, 5 + 2, 0);
+
+            for(int i = 0; i < MAX_DIFFUSEUR; i++){
+                if(&list_diffuseur[i].id != -1){
+                    memset(buffDiffuseur,'\0',PORT*2 + ID*2 + IP*2 + 5 + 4);
+
+                    memcpy(buffDiffuseur, "ITEM ", strlen("ITEM "));
+                    memcpy(buffDiffuseur + 5, &list_diffuseur[i].id, ID);
+                    memcpy(buffDiffuseur + 5 + ID, " ", 1);
+                    memcpy(buffDiffuseur + 5 + ID + 1 , &list_diffuseur[i].ip1, IP);
+                    memcpy(buffDiffuseur + 5 + ID + 1 + IP, " ", 1);
+                    memcpy(buffDiffuseur + 5 + ID + 2 + IP, &list_diffuseur[i].port1, PORT);
+                    memcpy(buffDiffuseur + 5 + ID + 2 + IP + PORT, " ", 1);
+
+                    memcpy(buffDiffuseur + 5 + ID + 3 + IP + PORT, &list_diffuseur[i].ip2, IP);
+                    memcpy(buffDiffuseur + 5 + ID + 3 + 2*IP + PORT, " ", 1);
+                    memcpy(buffDiffuseur + 5 + ID + 4 + 2*IP + PORT, &list_diffuseur[i].port2, PORT);
+
+                    send(descripteur,buffDiffuseur, PORT*2 + ID*2 + IP*2 + 5 + 4, 0);
+
+                }
+            }
         }else{
             continue;
         }    
@@ -68,6 +111,11 @@ int main(int argc, char**argv) {
     if(argc!=2){
         printf("Erreur il faut fournir un numero de port");
         return 0;
+    }
+
+    diffuseur vide = {.id = -1, .index = -1, .ip1 = -1, .ip2 = -1, .port1 = -1, .port2 = -1};
+    for(int i = 0; i < MAX_DIFFUSEUR; i++){
+        list_diffuseur[i] = vide;
     }
 
     int p=atoi(argv[1]);
