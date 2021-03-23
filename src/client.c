@@ -15,7 +15,8 @@ void configuration (){
     scanf("%99s", buf);
     while (strlen(buf) != 8){
         memset(buf, '\0',100);
-        printf("Bonjour, pouvez vous me donnez votre nom ? [exactement 8 caractère]\n");
+        printf("Vous n'avez pas taper EXACTEMENT 8 caractère !\n");
+        printf("Pouvez vous me donner votre nom en EXACTEMENT 8 caractère ? exemple : \"Traveler\" \n");
         scanf("%99s", buf);
     }
     strcat(pseudo,buf);
