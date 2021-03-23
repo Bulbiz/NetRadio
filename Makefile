@@ -1,2 +1,5 @@
 all : 
-	gcc src/client.c -o client
+	gcc -Wall -pthread src/client.c -o client
+
+clean :
+	rm client

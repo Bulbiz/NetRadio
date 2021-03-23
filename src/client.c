@@ -6,13 +6,19 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 
-char pseudo [9];
+char pseudo [9];// il y a un \0 à la fin !
 
 void configuration (){
+    char buf [100];
+    memset(buf, '\0',100);
     printf("Bonjour, pouvez vous me donnez votre nom ? [exactement 8 caractère]\n");
-    while(read(STDIN_FILENO,pseudo,9) != 9)
+    scanf("%99s", buf);
+    while (strlen(buf) != 8){
+        memset(buf, '\0',100);
         printf("Bonjour, pouvez vous me donnez votre nom ? [exactement 8 caractère]\n");
-    pseudo[8] = '\0'; //supression du \n à la fin
+        scanf("%99s", buf);
+    }
+    strcat(pseudo,buf);
     printf("Votre nom est donc %s !\n",pseudo);
 }
 
