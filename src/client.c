@@ -23,8 +23,23 @@ void configuration (){
     printf("Votre nom est donc %s !\n",pseudo);
 }
 
-void list (){
+/* Connecte à une machine sur un port en TCP */
+int connection (char * machine, int port ){
+    struct sockaddr_in adress_sock;
+    adress_sock.sin_family = AF_INET;
+    adress_sock.sin_port = htons(port);
+    inet_aton(machine,&adress_sock.sin_addr);
 
+    int descr = socket(PF_INET,SOCK_STREAM,0);
+    int r = connect(descr,(struct sockaddr *)&adress_sock, sizeof(struct sockaddr_in));
+    if (r == -1 ){
+        fprintf(stderr,"Impossible de se connecter à la machine !\n");
+        return -1;
+    }
+    return descr;
+}
+
+void list (){
 }
 
 void mess (){
