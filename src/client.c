@@ -22,16 +22,57 @@ void configuration (){
     printf("Votre nom est donc %s !\n",pseudo);
 }
 
-void connection_gestionnaire (){
-    char * machine = malloc (sizeof(char) * 500);
-    printf("Sur quel machine réside votre gestionnaire de diffuseur ? (moins de 500 caractère)\n");
-    int size = read(STDIN_FILENO,machine,500);
-    if (size < 0 ) {perror("Gestionnaire");} //pour les Debugs 
-    machine[size - 1] = '\0';
-    printf("Machine : %s", machine);
+void list (){
+
+}
+
+void mess (){
+
+}
+
+void last (){
+
+}
+
+void hear (){
+
+}
+
+void help (){
+    printf("LIST -> Demande à un gestionnaire de diffuseur la liste de ces diffuseurs\n");
+    printf("MESS -> Envoie un message à un diffuseur pour qu'il puisse le retransmettre\n");
+    printf("LAST -> Demande à un diffuseur la liste de ces derniers messages\n");
+    printf("HEAR -> Ecoute dans un port de multidiffusion\n");
+    printf("HELP -> Affiche l'aide pour l'utilisateur\n");
+}
+
+/* Demande ce que veut faire l'utilisateur */
+void choix_du_service (){
+    char commande [5];
+    while (1){
+        memset(commande,'\0',5);
+        printf("Que voulez vous faire entre [LIST], [MESS], [LAST], [HEAR], [HELP] ?\n");
+        scanf("%4s", commande);
+
+        if (strcmp(commande,"LIST") == 0){
+            list();
+        }
+        else if (strcmp(commande,"MESS") == 0){
+            mess ();
+        }
+        else if (strcmp(commande,"LAST") == 0){
+            last();
+        }
+        else if (strcmp(commande,"HEAR") == 0){
+            hear ();
+        }
+        else if (strcmp(commande,"HELP") == 0){
+            help ();
+        }
+    }
 }
 
 int main (){
-   configuration();
-   connection_gestionnaire ();
+    configuration();
+    choix_du_service ();
 }
