@@ -48,7 +48,7 @@ void list_diffuseur (int descripteur){
     recv(descripteur,message_initial,7,0);
 
     if (strncmp(message_initial,"LINB",4) != 0){
-        printf("Le message reçu est mauvais ! Fermeture de la connection ... \n");
+        printf("Le message reçu est mauvais !Il s'agissait de  : %s \nFermeture de la connection ... \n",message_initial);
         close(descripteur);
         return;
     }
@@ -58,6 +58,7 @@ void list_diffuseur (int descripteur){
     for (int i = 0; i < nombre_de_message ; i ++ ){
         memset(buf,'\0',56);
         recv(descripteur,buf,55,0);
+        printf("J'ai reçu : %s" , buf);
         if (strncmp(buf,"ITEM",4) == 0){
             printf("Diffuseur : %s \n", buf + 5);
         }else{
