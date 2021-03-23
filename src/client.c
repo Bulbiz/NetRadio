@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <netdb.h>
 
 char pseudo [9];// il y a un \0 à la fin !
 
@@ -23,23 +24,59 @@ void configuration (){
     printf("Votre nom est donc %s !\n",pseudo);
 }
 
-/* Connecte à une machine sur un port en TCP */
-int connection (char * machine, int port ){
-    struct sockaddr_in adress_sock;
-    adress_sock.sin_family = AF_INET;
-    adress_sock.sin_port = htons(port);
-    inet_aton(machine,&adress_sock.sin_addr);
+/* Permet d'obtenir l'adresse IPV4 à partir d'un nom de machine */
+int conversionAdresse (char * machine_name,struct in_addr * buf){
+    struct addrinfo *first_info;
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_INET;
 
-    int descr = socket(PF_INET,SOCK_STREAM,0);
-    int r = connect(descr,(struct sockaddr *)&adress_sock, sizeof(struct sockaddr_in));
-    if (r == -1 ){
-        fprintf(stderr,"Impossible de se connecter à la machine !\n");
-        return -1;
-    }
-    return descr;
+    int r = getaddrinfo(machine_name,NULL,&hints,&first_info);
+    struct sockaddr_in *addressin = (struct sockaddr_in *) first_info -> ai_addr;
+    *buf = (struct in_addr) (addressin->sin_addr);
+    return r;
 }
 
+/* Connecte à une machine sur un port en TCP */
+int connection (char * machine, int port){
+    struct sockaddr_in socket_addr;
+    socket_addr.sin_family = AF_INET; //La socket utilise du IPV4
+    socket_addr.sin_port = htons(port);
+
+    int r = conversionAdresse (machine, &socket_addr.sin_addr);
+    printf("Address IPv4 : %s\n",inet_ntoa(socket_addr.sin_addr));
+
+    if (r != -1){
+        int descripteur = socket (PF_INET,SOCK_STREAM,0);
+        connect(descripteur, (struct sockaddr *) &socket_addr, sizeof(struct sockaddr_in));
+        return descripteur;
+    }else{
+        return -1;
+    }
+}
+
+/* Connecte à une machine sur un port en TCP */
 void list (){
+    char machine [500];
+    memset(machine,'\0',500);
+    printf("Sur quelle machine se trouve le gestionaire ?[<500 caractères]\n");
+    scanf("%499s", machine);
+    printf("La machine se trouve à %s!\n",machine);
+
+    char buf [5];
+    int port = 0;
+    while(port == 0){
+        memset(buf,'\0',5);
+        printf("Sur quel port se connecter ? [4 nombre]\n");
+        scanf("%4s", buf);
+        port = atoi(buf);
+    }
+
+    int descripteur = connection (machine, port);
+    if (descripteur == -1 || send(descripteur,"LIST",4,0) == -1){
+        printf("Impossible d'envoyer le message LIST");
+        close(descripteur);
+    }
 }
 
 void mess (){
