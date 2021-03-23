@@ -35,9 +35,70 @@ diffuseur list_diffuseur [MAX_DIFFUSEUR];
 int diffuseurPresent (){
     int count = 0;
     for (int i = 0; i < MAX_DIFFUSEUR; i++)
-        if ( &list_diffuseur[i].id != -1)
+        if ( strcmp(list_diffuseur[i].id, "") == 0)
             count ++;
     return count;
+}
+
+void ajoutDiffuseur (diffuseur d){
+    char vide[ID];
+    memset(vide,'\0', ID);
+    for (int i = 0; i < MAX_DIFFUSEUR; i++){
+        memcpy(vide, list_diffuseur[i].id, ID);
+        if(strcmp(vide, "") == 0){
+            d.index = i;
+            list_diffuseur[i] = d;
+            break;
+        }
+    }
+}
+
+void suppDiffuseur (diffuseur d){
+    diffuseur vide = {.id = "", .index = -1, .ip1 = "", .ip2 = "", .port1 = "", .port2 = ""};
+    list_diffuseur[d.index] = vide;
+}
+
+void*ca_va(void *arg){
+    
+    struct client * utilisateur = (struct client *)arg;
+    int descripteur = utilisateur -> descripteur;
+    char buff [4];
+
+    char tmpId [ID];
+    char tmpIp1[IP];
+    char tmpIp2[IP];
+    char tmpPort1[PORT];
+    char tmpPort2[PORT];
+    strncat (tmpId, buff + 5, ID);
+    strncat (tmpIp1, buff + 5 + ID + 1, IP);
+    strncat (tmpPort1, buff + 5 + ID + 2 + IP, PORT);
+    strncat (tmpIp2, buff + 5 + ID + 3 + IP + PORT, IP);
+    strncat (tmpPort2, buff + 5 + ID + 4 + 2*IP + PORT, PORT);
+    diffuseur d;
+    strcpy(d.id,tmpId);
+    strcpy(d.ip1,tmpIp1);
+    strcpy(d.ip2,tmpIp2);
+    strcpy(d.port1,tmpPort1);
+    strcpy(d.port2,tmpPort2);
+    d.index = -1;
+    ajoutDiffuseur(d);
+
+    while(1){
+        sleep(5);
+        send(descripteur, "RUOK", strlen("RUOK"), 0);
+        recv(descripteur,buff, strlen(buff),0);
+
+        if (strncmp(buff, "IMOK", strlen("IMOK")) == 0){
+            continue;
+        }else{
+            suppDiffuseur (d);
+            break;
+        }
+    }
+
+    free(arg);
+    close(descripteur);
+    return NULL;
 }
 
 void*communication(void *arg){
@@ -65,9 +126,22 @@ void*communication(void *arg){
 
         //condition REGI
         if(strncmp(buff, "REGI ", strlen("REGI ")) == 0){
+            if(diffuseurPresent() < 50){
+                
+                pthread_t th_diffuseur;
+                int r2=pthread_create(&th_diffuseur,NULL,ca_va, &utilisateur);
+                if(r2!=0){
+                    printf("Probleme de creation de thread");
+                    exit(0);
+                }
+                send(descripteur, "REOK", strlen("REOK"), 0);
+            }else{
+                send(descripteur, "RENO", strlen("RENO"), 0);
+            }
 
         //condition LIST
         }else if (strncmp(buff, "LIST", strlen("LIST")) == 0){
+
             memset(envoieNumDiff,'\0', 5 + 2);
             nbDiffuseur = diffuseurPresent();
             memcpy(envoieNumDiff, "LINB ", strlen("LINB "));
@@ -77,7 +151,7 @@ void*communication(void *arg){
             send(descripteur,envoieNumDiff, 5 + 2, 0);
 
             for(int i = 0; i < MAX_DIFFUSEUR; i++){
-                if(&list_diffuseur[i].id != -1){
+                if(strcmp(list_diffuseur[i].id, "") != 0){
                     memset(buffDiffuseur,'\0',PORT*2 + ID*2 + IP*2 + 5 + 4);
 
                     memcpy(buffDiffuseur, "ITEM ", strlen("ITEM "));
@@ -113,7 +187,7 @@ int main(int argc, char**argv) {
         return 0;
     }
 
-    diffuseur vide = {.id = -1, .index = -1, .ip1 = -1, .ip2 = -1, .port1 = -1, .port2 = -1};
+    diffuseur vide = {.id = "", .index = -1, .ip1 = "", .ip2 = "", .port1 = "", .port2 = ""};
     for(int i = 0; i < MAX_DIFFUSEUR; i++){
         list_diffuseur[i] = vide;
     }
