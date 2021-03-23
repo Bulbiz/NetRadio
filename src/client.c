@@ -9,7 +9,7 @@
 #include <signal.h>
 
 char pseudo [9];// il y a un \0 à la fin !
-int tout_se_passe_bien = 0;
+int tout_se_passe_bien = 0;// Vérifie que tout se passe bien 
 
 /* Permet d'obtenir l'adresse IPV4 à partir d'un nom de machine */
 int conversionAdresse (char * machine_name,struct in_addr * buf){
@@ -107,11 +107,11 @@ void list (){
     int descripteur = connection (machine, port);
     send(descripteur,"LIST",strlen("LIST"),0);
 
-    if(tout_se_passe_bien > 0){
+    if(tout_se_passe_bien == 0){
         list_diffuseur(descripteur);
     }else{
         printf("Il y a eu une erreur de connection, désolé ...\n");
-        tout_se_passe_bien = 1;
+        tout_se_passe_bien = 0;
         close(descripteur);
     }
 }
