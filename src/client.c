@@ -45,6 +45,7 @@ void help (){
     printf("LAST -> Demande à un diffuseur la liste de ces derniers messages\n");
     printf("HEAR -> Ecoute dans un port de multidiffusion\n");
     printf("HELP -> Affiche l'aide pour l'utilisateur\n");
+    printf("EXIT -> Termine le programme\n");
 }
 
 /* Demande ce que veut faire l'utilisateur */
@@ -52,7 +53,7 @@ void choix_du_service (){
     char commande [5];
     while (1){
         memset(commande,'\0',5);
-        printf("Que voulez vous faire entre [LIST], [MESS], [LAST], [HEAR], [HELP] ?\n");
+        printf("Que voulez vous faire entre [LIST], [MESS], [LAST], [HEAR], [HELP], [EXIT] ?\n");
         scanf("%4s", commande);
 
         if (strcmp(commande,"LIST") == 0){
@@ -69,6 +70,10 @@ void choix_du_service (){
         }
         else if (strcmp(commande,"HELP") == 0){
             help ();
+        }
+        else if (strcmp(commande,"EXIT") == 0){
+            printf("Merci d'avoir utiliser notre service, à la prochaine !\n");
+            exit (0);
         }
     }
 }
