@@ -6,23 +6,10 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <signal.h>
 
 char pseudo [9];// il y a un \0 à la fin !
-
-void configuration (){
-    char buf [100];
-    memset(buf, '\0',100);
-    printf("Bonjour, pouvez vous me donnez votre nom ? [exactement 8 caractère]\n");
-    scanf("%99s", buf);
-    while (strlen(buf) != 8){
-        memset(buf, '\0',100);
-        printf("Vous n'avez pas taper EXACTEMENT 8 caractère !\n");
-        printf("Pouvez vous me donner votre nom en EXACTEMENT 8 caractère ? exemple : \"Traveler\" \n");
-        scanf("%99s", buf);
-    }
-    strcat(pseudo,buf);
-    printf("Votre nom est donc %s !\n",pseudo);
-}
+int tout_se_passe_bien = 0;
 
 /* Permet d'obtenir l'adresse IPV4 à partir d'un nom de machine */
 int conversionAdresse (char * machine_name,struct in_addr * buf){
@@ -44,7 +31,6 @@ int connection (char * machine, int port){
     socket_addr.sin_port = htons(port);
 
     int r = conversionAdresse (machine, &socket_addr.sin_addr);
-    printf("Address IPv4 : %s\n",inet_ntoa(socket_addr.sin_addr));
 
     if (r != -1){
         int descripteur = socket (PF_INET,SOCK_STREAM,0);
@@ -55,14 +41,53 @@ int connection (char * machine, int port){
     }
 }
 
-/* Connecte à une machine sur un port en TCP */
-void list (){
-    char machine [500];
+void list_diffuseur (int descripteur){
+    printf("Veuillez patientez, nous recevons la liste des diffuseurs ...\n");
+    char message_initial [8];
+    memset(message_initial,'\0',8);
+    recv(descripteur,message_initial,7,0);
+
+    if (strncmp(message_initial,"LINB",4) != 0){
+        printf("Le message reçu est mauvais ! Fermeture de la connection ... \n");
+        close(descripteur);
+        return;
+    }
+
+    int nombre_de_message = atoi(message_initial + 5);
+    char buf [56];
+    for (int i = 0; i < nombre_de_message ; i ++ ){
+        memset(buf,'\0',56);
+        recv(descripteur,buf,55,0);
+        if (strncmp(buf,"ITEM",4) == 0){
+            printf("Diffuseur : %s \n", buf + 5);
+        }else{
+            printf("Le message reçu est mauvais ! Fermeture de la connection ... \n");
+            close(descripteur);
+            return;
+        }
+    }
+    close(descripteur);
+}
+
+/* Quelque chose s'est mal passé */
+void recuperateur_erreur (int signo){
+    if (signo == SIGPIPE){
+        tout_se_passe_bien = -1;
+    }
+}
+
+/* Demande à l'utilisateur le nom de la machine */
+char * demande_nom_machine (){
+    char  * machine = malloc (sizeof(char) * 500);
     memset(machine,'\0',500);
-    printf("Sur quelle machine se trouve le gestionaire ?[<500 caractères]\n");
+    printf("Sur quelle machine se connecter ? [<500 caractères]\n");
     scanf("%499s", machine);
     printf("La machine se trouve à %s!\n",machine);
+    return machine;
+}
 
+/* Demande à l'utilisateur le port de la machine */
+int demande_port (){
     char buf [5];
     int port = 0;
     while(port == 0){
@@ -71,10 +96,22 @@ void list (){
         scanf("%4s", buf);
         port = atoi(buf);
     }
+    return port;
+}
+/* Connecte à une machine sur un port en TCP */
+void list (){
+    char * machine = demande_nom_machine();
+    int port = demande_port();
 
+    signal(SIGPIPE, recuperateur_erreur);
     int descripteur = connection (machine, port);
-    if (descripteur == -1 || send(descripteur,"LIST",4,0) == -1){
-        printf("Impossible d'envoyer le message LIST");
+    send(descripteur,"LIST",strlen("LIST"),0);
+
+    if(tout_se_passe_bien > 0){
+        list_diffuseur(descripteur);
+    }else{
+        printf("Il y a eu une erreur de connection, désolé ...\n");
+        tout_se_passe_bien = 1;
         close(descripteur);
     }
 }
@@ -128,6 +165,21 @@ void choix_du_service (){
             exit (0);
         }
     }
+}
+
+void configuration (){
+    char buf [100];
+    memset(buf, '\0',100);
+    printf("Bonjour, pouvez vous me donnez votre nom ? [exactement 8 caractère]\n");
+    scanf("%99s", buf);
+    while (strlen(buf) != 8){
+        memset(buf, '\0',100);
+        printf("Vous n'avez pas taper EXACTEMENT 8 caractère !\n");
+        printf("Pouvez vous me donner votre nom en EXACTEMENT 8 caractère ? exemple : \"Traveler\" \n");
+        scanf("%99s", buf);
+    }
+    strcat(pseudo,buf);
+    printf("Votre nom est donc %s !\n",pseudo);
 }
 
 int main (){
