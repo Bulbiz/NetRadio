@@ -1,15 +1,18 @@
 import java.io.*;
 import java.net.*;
+import java.util.*;
 
 public class Diffuseur{
     public String identifiant;
     public DatagramSocket portMsg;
     public InetSocketAddress multiDiff;
     public DatagramSocket portMultiDiff;
+    public LinkedList<String> listMsg;
 
     public int numMsg = 0;
     public final String ackm = "ACKM";
     public final String endm = "ENDM";
+    public final String last = "LAST";
     public final int tailleMaxMsg = 140;
     public final int tailleId = 8;
 
@@ -19,6 +22,7 @@ public class Diffuseur{
         this.portMsg = recv;
         this.multiDiff = multiDiff;
         this.portMultiDiff = portDiff;
+        this.listMsg = new LinkedList<String>();
     }
 
     public String assembleMsgDiff(String id, String message){
@@ -33,5 +37,9 @@ public class Diffuseur{
         }
 
         return "Diff " + numMsg + " " + id + " " + message;
+    }
+
+    public void addToList(String msg){
+        this.listMsg.add(msg);
     }
 }
