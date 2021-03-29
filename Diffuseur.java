@@ -10,11 +10,12 @@ public class Diffuseur{
     public LinkedList<String> listMsg;
 
     public int numMsg = 0;
-    public final String ackm = "ACKM";
-    public final String endm = "ENDM";
-    public final String last = "LAST";
-    public final int tailleMaxMsg = 140;
-    public final int tailleId = 8;
+    public static final String ACKM = "ACKM";
+    public static final String ENDM = "ENDM";
+    public static final String LAST = "LAST";
+    public static final String DIFF = "DIFF";
+    public static final int TAILLEMAXMSG = 140;
+    public static final int TAILLEID = 8;
 
     //TODO: ajouter les vérifications
     public Diffuseur(String id, DatagramSocket recv, InetSocketAddress multiDiff, DatagramSocket portDiff){
@@ -36,7 +37,7 @@ public class Diffuseur{
             numMsg++;
         }
 
-        return "Diff " + numMsg + " " + id + " " + message;
+        return DIFF + " " + numMsg + " " + id + " " + message;
     }
 
     public void addToList(String msg){
