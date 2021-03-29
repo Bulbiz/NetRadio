@@ -27,7 +27,7 @@ public class Diffuseur{
     }
 
     public String assembleMsgDiff(String id, String message){
-        if (message.length() > tailleMaxMsg){
+        if (message.length() > TAILLEMAXMSG){
             return "";
         }
 
