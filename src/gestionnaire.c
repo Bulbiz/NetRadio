@@ -33,12 +33,14 @@ diffuseur * list_diffuseur;
 
 void afficheDiffuseur (){
     for (int i = 0; i < MAX_DIFFUSEUR; i++){
-        printf("INDEX : %d\n",list_diffuseur[i].index);
-        printf("ID : %s\n",list_diffuseur[i].id);
-        printf("IP1 : %s\n",list_diffuseur[i].ip1);
-        printf("IP2 : %s\n",list_diffuseur[i].ip2);
-        printf("PORT1 : %s\n",list_diffuseur[i].port1);
-        printf("PORT2 : %s\n\n",list_diffuseur[i].port2);
+        if(list_diffuseur[i].index != -1){
+            printf("INDEX : %d\n",list_diffuseur[i].index);
+            printf("ID : %s\n",list_diffuseur[i].id);
+            printf("IP1 : %s\n",list_diffuseur[i].ip1);
+            printf("IP2 : %s\n",list_diffuseur[i].ip2);
+            printf("PORT1 : %s\n",list_diffuseur[i].port1);
+            printf("PORT2 : %s\n\n",list_diffuseur[i].port2);
+        }
     }
 }
 
