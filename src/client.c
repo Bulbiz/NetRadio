@@ -11,6 +11,65 @@
 char pseudo [9];// il y a un \0 à la fin !
 int tout_se_passe_bien = 0;// Vérifie que tout se passe bien 
 
+//Code trouvé sur internet qui permet de flush stdin après une lecture
+void flush_stdin()
+{
+    int c = 0;
+    while (c != '\n' && c != EOF)
+    {
+        c = getchar();
+    }
+}
+
+char * lire_diese (int size){
+    char * lecture = malloc (sizeof(char) * (size + 3));
+    memset(lecture,'#',size);
+    lecture[size] = '\0';
+    if (fgets(lecture,size + 1,stdin) == NULL){
+        printf("Erreur sur la lecture au clavier !");
+    }
+
+    if(strchr(lecture,'\n') == NULL)
+        flush_stdin();
+    
+    lecture[strlen(lecture) - 1 ] = '#'; //enleve le \n
+    lecture[strlen(lecture)] = '#'; //enleve le \0 original
+    lecture[size] = '\0';
+    return lecture;
+}
+
+char * lire (int size){
+    char * lecture = malloc (sizeof(char) * (size + 3));
+    memset(lecture,'\0',size);
+    while(strlen(lecture) != size){
+        memset(lecture,'\0',size);
+        if (fgets(lecture,size + 1,stdin) == NULL)
+            printf("Erreur sur la lecture au clavier !");
+
+        if(strchr(lecture,'\n') == NULL)
+            flush_stdin();
+        
+        if (lecture[strlen(lecture) - 1] == '\n')
+            lecture[strlen(lecture) - 1] = '\0';
+    }
+    return lecture;
+}
+
+char * lire_variable (int size){
+    char * lecture = malloc (sizeof(char) * (size + 3));
+    memset(lecture,'\0',size);
+    if (fgets(lecture,size + 1,stdin) == NULL)
+        printf("Erreur sur la lecture au clavier !");
+
+    if(strchr(lecture,'\n') == NULL)
+        flush_stdin();
+    
+    if (lecture[strlen(lecture) - 1] == '\n')
+        lecture[strlen(lecture) - 1] = '\0';
+    return lecture;
+}
+
+
 /* Permet d'obtenir l'adresse IPV4 à partir d'un nom de machine */
 int conversionAdresse (char * machine_name,struct in_addr * buf){
     struct addrinfo *first_info;
@@ -78,10 +137,8 @@ void recuperateur_erreur (int signo){
 
 /* Demande à l'utilisateur le nom de la machine */
 char * demande_nom_machine (){
-    char  * machine = malloc (sizeof(char) * 500);
-    memset(machine,'\0',500);
     printf("Sur quelle machine se connecter ? [<500 caractères]\n");
-    scanf("%499s", machine);
+    char * machine = lire_variable(500);
     printf("La machine se trouve à %s!\n",machine);
     return machine;
 }
@@ -116,8 +173,25 @@ void list (){
     }
 }
 
-void mess (){
+/* Demande à l'utilisateur le nom de la machine */
+char * demande_message (){
+    char  * message = malloc (sizeof(char) * 500);
+    int size = 0;
+    while (size != 10){
+        printf("Quel est le message que vous voulez affichez ? [Exactement 10 caractères]\n");
+        memset(message,'\0',500);
+        size = scanf("%499s", message);
+    }
+    printf("Le message à envoyer est %s! Il est bien de taille : %ld\n",message,strlen(message));
+    return message;
+}
 
+void mess (){
+    char * machine = demande_nom_machine ();
+    int port = demande_port();
+    char * message = demande_message ();
+    signal(SIGPIPE, recuperateur_erreur);
+    int descripteur = connection (machine, port);
 }
 
 void last (){
@@ -139,11 +213,9 @@ void help (){
 
 /* Demande ce que veut faire l'utilisateur */
 void choix_du_service (){
-    char commande [5];
     while (1){
-        memset(commande,'\0',5);
         printf("Que voulez vous faire entre [LIST], [MESS], [LAST], [HEAR], [HELP], [EXIT] ?\n");
-        scanf("%4s", commande);
+        char * commande = lire(4);
 
         if (strcmp(commande,"LIST") == 0){
             list();
@@ -168,21 +240,14 @@ void choix_du_service (){
 }
 
 void configuration (){
-    char buf [100];
-    memset(buf, '\0',100);
-    printf("Bonjour, pouvez vous me donnez votre nom ? [exactement 8 caractère]\n");
-    scanf("%99s", buf);
-    while (strlen(buf) != 8){
-        memset(buf, '\0',100);
-        printf("Vous n'avez pas taper EXACTEMENT 8 caractère !\n");
-        printf("Pouvez vous me donner votre nom en EXACTEMENT 8 caractère ? exemple : \"Traveler\" \n");
-        scanf("%99s", buf);
-    }
-    strcat(pseudo,buf);
+    printf("Bonjour, pouvez vous me donnez votre nom ? [<= 8 caractère]\n");
+    char * pseudo = lire_diese(8);
     printf("Votre nom est donc %s !\n",pseudo);
 }
 
 int main (){
     configuration();
     choix_du_service ();
+    printf("|%s|",lire_variable(8));
+    printf("|%s|",lire_variable(8));
 }
