@@ -1,15 +1,17 @@
 import java.net.*;
+import java.util.*;
 import java.io.*;
 import java.lang.*;
 
 public class EcouteUtilisateur implements Runnable{
-    public Socket socket;
-    //FIXME: message stocké sommairement ici à revoir
-    public String msgUtilisateur;
+    private Socket socket;
+    private LinkedList<String> listMsg;
+    private DiffuseMulticast liveStream;
 
-    public EcouteUtilisateur(Socket s){
+    public EcouteUtilisateur(Socket s, LinkedList<String> listMsg, DiffuseMulticast live){
         this.socket = s;
-        this.msgUtilisateur = "";
+        this.listMsg = listMsg;
+        this.liveStream = live;
     }
 
     public void run(){
@@ -24,7 +26,7 @@ public class EcouteUtilisateur implements Runnable{
                 if (traitement[0].equals(Diffuseur.MESS) 
                     && traitement[1].length() <= 8 
                     && traitement[2].length() <= 140) {
-                    this.msgUtilisateur = traitement[2];
+                    this.listMsg.add(traitement[2]);
 
                     pw.print(Diffuseur.ACKM + "\n");
                     pw.flush();
@@ -34,7 +36,16 @@ public class EcouteUtilisateur implements Runnable{
                 } else if (traitement[0].equals(Diffuseur.LAST)) {
                     try{
                         int nbMsg = Integer.valueOf(traitement[1]);
-                        //TODO: implémenter l'envoi des messages
+                        int posMsg = this.liveStream.getIndice();
+                        for(int i = 0; i < nbMsg; i++){
+                            if (posMsg == 0){
+                                posMsg = this.listMsg.size() - 1;
+                            }
+                            String [] ancienMsg = this.listMsg.get(posMsg).split(" ");
+                            pw.print(Diffuseur.OLDM + ancienMsg[1] + ancienMsg[2] + ancienMsg[3] + "\n");
+                            pw.flush();
+                            posMsg--;
+                        }
                         pw.print(Diffuseur.ENDM + "\n");
                         pw.flush();
                     } catch(NumberFormatException e) {

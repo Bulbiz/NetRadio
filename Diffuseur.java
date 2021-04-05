@@ -15,6 +15,7 @@ public class Diffuseur{
     public static final String LAST = "LAST";
     public static final String DIFF = "DIFF";
     public static final String MESS = "MESS";
+    public static final String OLDM = "OLDM";
     public static final int TAILLEMAXMSG = 140;
     public static final int TAILLEID = 8;
 
