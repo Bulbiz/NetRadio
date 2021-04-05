@@ -7,8 +7,9 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <signal.h>
+#include <ctype.h>
 
-char pseudo [9];// il y a un \0 à la fin !
+char * pseudo;
 int tout_se_passe_bien = 0;// Vérifie que tout se passe bien 
 
 //Code trouvé sur internet qui permet de flush stdin après une lecture
@@ -31,10 +32,12 @@ char * lire_diese (int size){
 
     if(strchr(lecture,'\n') == NULL)
         flush_stdin();
-    
-    lecture[strlen(lecture) - 1 ] = '#'; //enleve le \n
-    lecture[strlen(lecture)] = '#'; //enleve le \0 original
+    else{
+        lecture[strlen(lecture) - 1 ] = '#'; //enleve le \n
+        lecture[strlen(lecture)] = '#'; //enleve le \0 original
+    }
     lecture[size] = '\0';
+
     return lecture;
 }
 
@@ -68,6 +71,9 @@ char * lire_variable (int size){
         lecture[strlen(lecture) - 1] = '\0';
     return lecture;
 }
+
+
+
 
 
 /* Permet d'obtenir l'adresse IPV4 à partir d'un nom de machine */
@@ -143,18 +149,27 @@ char * demande_nom_machine (){
     return machine;
 }
 
+int est_un_nombre (char * str){
+    for (int i = 0; i < strlen(str) ; i ++)
+        if(isdigit(str[i]) == 0)
+            return -1;
+    return 0;
+    
+}
+
 /* Demande à l'utilisateur le port de la machine */
 int demande_port (){
-    char buf [5];
     int port = 0;
     while(port == 0){
-        memset(buf,'\0',5);
-        printf("Sur quel port se connecter ? [4 nombre]\n");
-        scanf("%4s", buf);
-        port = atoi(buf);
+        printf("Sur quel port se connecter ? [Exactement 4 chiffres]\n");
+        char * buf = lire(4);
+        if(est_un_nombre(buf) == 0)
+            port = atoi(buf);
     }
+    printf("La connection se fera sur le port %d\n",port);
     return port;
 }
+
 /* Connecte à une machine sur un port en TCP */
 void list (){
     char * machine = demande_nom_machine();
@@ -175,23 +190,49 @@ void list (){
 
 /* Demande à l'utilisateur le nom de la machine */
 char * demande_message (){
-    char  * message = malloc (sizeof(char) * 500);
-    int size = 0;
-    while (size != 10){
-        printf("Quel est le message que vous voulez affichez ? [Exactement 10 caractères]\n");
-        memset(message,'\0',500);
-        size = scanf("%499s", message);
-    }
-    printf("Le message à envoyer est %s! Il est bien de taille : %ld\n",message,strlen(message));
+    printf("Quel est le message que vous voulez affichez ? [<= 140 caractères]\n");
+    char  * message = lire_diese(140);
+    printf("Le message à envoyer est %s!\nIl est bien de taille : %ld\n",message,strlen(message));
     return message;
 }
 
 void mess (){
+    // Demande à l'utilisateur toute les informations utiles
     char * machine = demande_nom_machine ();
     int port = demande_port();
     char * message = demande_message ();
     signal(SIGPIPE, recuperateur_erreur);
     int descripteur = connection (machine, port);
+
+    //Créer les buffers
+    char * colis = malloc (sizeof(char) * (4 + 1 + 8 + 1 + 140 + 1));
+    char * receveur = malloc (sizeof(char) * 5);
+
+    //Envoie le message
+    sprintf(colis,"MESS %s %s",pseudo,message);
+    int size = send(descripteur,colis,4 + 1 + 8 + 1 + 140,0);
+    if (size < 0){
+        printf("Il y a eu une erreur dans l'envoi du message!\n");
+        close(descripteur);
+        return;
+    }
+
+    //Reçoit le message
+    size = recv(descripteur,receveur,4,0);
+    if (size < 0){
+        printf("Il y a eu une erreur dans la reception du message!\n");
+        close(descripteur);
+        return;
+    }
+
+    //Vérifie que le message à bien été reçu
+    receveur[size] = '\0';
+    if(strcmp(receveur,"ACKM") == 0)
+        printf("Le message à bien été reçu par le diffuseur!\n");
+    else
+        printf("Le message n'a pas bien été reçu par le diffuseur, nous avons reçu '%s'\n",receveur);
+    close(descripteur);
+
 }
 
 void last (){
@@ -241,13 +282,11 @@ void choix_du_service (){
 
 void configuration (){
     printf("Bonjour, pouvez vous me donnez votre nom ? [<= 8 caractère]\n");
-    char * pseudo = lire_diese(8);
+    pseudo = lire_diese(8);
     printf("Votre nom est donc %s !\n",pseudo);
 }
 
 int main (){
     configuration();
     choix_du_service ();
-    printf("|%s|",lire_variable(8));
-    printf("|%s|",lire_variable(8));
 }
