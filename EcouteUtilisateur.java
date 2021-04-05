@@ -31,6 +31,16 @@ public class EcouteUtilisateur implements Runnable{
 
                     this.socket.close();
                     break;
+                } else if (traitement[0].equals(Diffuseur.LAST)) {
+                    try{
+                        int nbMsg = Integer.valueOf(traitement[1]);
+                        //TODO: implémenter l'envoi des messages
+                        pw.print(Diffuseur.ENDM + "\n");
+                        pw.flush();
+                    } catch(NumberFormatException e) {
+                        pw.print("[Erreur] : Format de nombre invalide\n");
+                        pw.flush();
+                    }
                 } else {
                     pw.print("[Erreur] : Message au mauvais format\n");
                     pw.flush();
