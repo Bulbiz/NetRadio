@@ -7,9 +7,74 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <signal.h>
+#include <ctype.h>
 
-char pseudo [9];// il y a un \0 à la fin !
+char * pseudo;
 int tout_se_passe_bien = 0;// Vérifie que tout se passe bien 
+
+//Code trouvé sur internet qui permet de flush stdin après une lecture
+void flush_stdin()
+{
+    int c = 0;
+    while (c != '\n' && c != EOF)
+    {
+        c = getchar();
+    }
+}
+
+char * lire_diese (int size){
+    char * lecture = malloc (sizeof(char) * (size + 3));
+    memset(lecture,'#',size);
+    lecture[size] = '\0';
+    if (fgets(lecture,size + 1,stdin) == NULL){
+        printf("Erreur sur la lecture au clavier !");
+    }
+
+    if(strchr(lecture,'\n') == NULL)
+        flush_stdin();
+    else{
+        lecture[strlen(lecture) - 1 ] = '#'; //enleve le \n
+        lecture[strlen(lecture)] = '#'; //enleve le \0 original
+    }
+    lecture[size] = '\0';
+
+    return lecture;
+}
+
+char * lire (int size){
+    char * lecture = malloc (sizeof(char) * (size + 3));
+    memset(lecture,'\0',size);
+    while(strlen(lecture) != size){
+        memset(lecture,'\0',size);
+        if (fgets(lecture,size + 1,stdin) == NULL)
+            printf("Erreur sur la lecture au clavier !");
+
+        if(strchr(lecture,'\n') == NULL)
+            flush_stdin();
+        
+        if (lecture[strlen(lecture) - 1] == '\n')
+            lecture[strlen(lecture) - 1] = '\0';
+    }
+    return lecture;
+}
+
+char * lire_variable (int size){
+    char * lecture = malloc (sizeof(char) * (size + 3));
+    memset(lecture,'\0',size);
+    if (fgets(lecture,size + 1,stdin) == NULL)
+        printf("Erreur sur la lecture au clavier !");
+
+    if(strchr(lecture,'\n') == NULL)
+        flush_stdin();
+    
+    if (lecture[strlen(lecture) - 1] == '\n')
+        lecture[strlen(lecture) - 1] = '\0';
+    return lecture;
+}
+
+
+
+
 
 /* Permet d'obtenir l'adresse IPV4 à partir d'un nom de machine */
 int conversionAdresse (char * machine_name,struct in_addr * buf){
@@ -79,26 +144,33 @@ void recuperateur_erreur (int signo){
 
 /* Demande à l'utilisateur le nom de la machine */
 char * demande_nom_machine (){
-    char  * machine = malloc (sizeof(char) * 500);
-    memset(machine,'\0',500);
     printf("Sur quelle machine se connecter ? [<500 caractères]\n");
-    scanf("%499s", machine);
+    char * machine = lire_variable(500);
     printf("La machine se trouve à %s!\n",machine);
     return machine;
 }
 
+int est_un_nombre (char * str){
+    for (int i = 0; i < strlen(str) ; i ++)
+        if(isdigit(str[i]) == 0)
+            return -1;
+    return 0;
+    
+}
+
 /* Demande à l'utilisateur le port de la machine */
 int demande_port (){
-    char buf [5];
     int port = 0;
     while(port == 0){
-        memset(buf,'\0',5);
-        printf("Sur quel port se connecter ? [4 nombre]\n");
-        scanf("%4s", buf);
-        port = atoi(buf);
+        printf("Sur quel port se connecter ? [Exactement 4 chiffres]\n");
+        char * buf = lire(4);
+        if(est_un_nombre(buf) == 0)
+            port = atoi(buf);
     }
+    printf("La connection se fera sur le port %d\n",port);
     return port;
 }
+
 /* Connecte à une machine sur un port en TCP */
 void list (){
     char * machine = demande_nom_machine();
@@ -117,7 +189,50 @@ void list (){
     }
 }
 
+/* Demande à l'utilisateur le nom de la machine */
+char * demande_message (){
+    printf("Quel est le message que vous voulez affichez ? [<= 140 caractères]\n");
+    char  * message = lire_diese(140);
+    printf("Le message à envoyer est %s!\nIl est bien de taille : %ld\n",message,strlen(message));
+    return message;
+}
+
 void mess (){
+    // Demande à l'utilisateur toute les informations utiles
+    char * machine = demande_nom_machine ();
+    int port = demande_port();
+    char * message = demande_message ();
+    signal(SIGPIPE, recuperateur_erreur);
+    int descripteur = connection (machine, port);
+
+    //Créer les buffers
+    char * colis = malloc (sizeof(char) * (4 + 1 + 8 + 1 + 140 + 1));
+    char * receveur = malloc (sizeof(char) * 5);
+
+    //Envoie le message
+    sprintf(colis,"MESS %s %s",pseudo,message);
+    int size = send(descripteur,colis,4 + 1 + 8 + 1 + 140,0);
+    if (size < 0){
+        printf("Il y a eu une erreur dans l'envoi du message!\n");
+        close(descripteur);
+        return;
+    }
+
+    //Reçoit le message
+    size = recv(descripteur,receveur,4,0);
+    if (size < 0){
+        printf("Il y a eu une erreur dans la reception du message!\n");
+        close(descripteur);
+        return;
+    }
+
+    //Vérifie que le message à bien été reçu
+    receveur[size] = '\0';
+    if(strcmp(receveur,"ACKM") == 0)
+        printf("Le message à bien été reçu par le diffuseur!\n");
+    else
+        printf("Le message n'a pas bien été reçu par le diffuseur, nous avons reçu '%s'\n",receveur);
+    close(descripteur);
 
 }
 
@@ -140,11 +255,9 @@ void help (){
 
 /* Demande ce que veut faire l'utilisateur */
 void choix_du_service (){
-    char commande [5];
     while (1){
-        memset(commande,'\0',5);
         printf("Que voulez vous faire entre [LIST], [MESS], [LAST], [HEAR], [HELP], [EXIT] ?\n");
-        scanf("%4s", commande);
+        char * commande = lire(4);
 
         if (strcmp(commande,"LIST") == 0){
             list();
@@ -169,17 +282,8 @@ void choix_du_service (){
 }
 
 void configuration (){
-    char buf [100];
-    memset(buf, '\0',100);
-    printf("Bonjour, pouvez vous me donnez votre nom ? [exactement 8 caractère]\n");
-    scanf("%99s", buf);
-    while (strlen(buf) != 8){
-        memset(buf, '\0',100);
-        printf("Vous n'avez pas taper EXACTEMENT 8 caractère !\n");
-        printf("Pouvez vous me donner votre nom en EXACTEMENT 8 caractère ? exemple : \"Traveler\" \n");
-        scanf("%99s", buf);
-    }
-    strcat(pseudo,buf);
+    printf("Bonjour, pouvez vous me donnez votre nom ? [<= 8 caractère]\n");
+    pseudo = lire_diese(8);
     printf("Votre nom est donc %s !\n",pseudo);
 }
 
