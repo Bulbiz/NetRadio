@@ -6,13 +6,15 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <pthread.h>
-#include <poll.h>
+#include <sys/select.h>
 #include <fcntl.h>
+#include <strings.h>
 
 #define MAX_DIFFUSEUR 50
 #define ID 8
 #define PORT 4
 #define IP 15
+#define TAILLE_MSG 55
 
 //adresse ip et descripteur du client
 struct client {
@@ -33,16 +35,17 @@ typedef struct diffuseur {
 // stockage des infos des diffuseurs
 diffuseur * list_diffuseur;
 
+void print (char * s){
+    printf ("%s\n",s);
+}
+
 void afficheDiffuseur (){
     for (int i = 0; i < MAX_DIFFUSEUR; i++){
-        if(list_diffuseur[i].index != -1){
-            printf("INDEX : %d\n",list_diffuseur[i].index);
-            printf("ID : %s\n",list_diffuseur[i].id);
-            printf("IP1 : %s\n",list_diffuseur[i].ip1);
-            printf("IP2 : %s\n",list_diffuseur[i].ip2);
-            printf("PORT1 : %s\n",list_diffuseur[i].port1);
-            printf("PORT2 : %s\n\n",list_diffuseur[i].port2);
-        }
+        printf("ID : %s\n",list_diffuseur[i].id);
+        printf("IP1 : %s\n",list_diffuseur[i].ip1);
+        printf("IP2 : %s\n",list_diffuseur[i].ip2);
+        printf("PORT1 : %s\n",list_diffuseur[i].port1);
+        printf("PORT2 : %s\n\n",list_diffuseur[i].port2);       
     }
 }
 
@@ -61,13 +64,12 @@ int ajoutDiffuseur (diffuseur d){
     memset(buff,'\0', ID);
     for (int i = 0; i < MAX_DIFFUSEUR; i++){
         memcpy(buff, list_diffuseur[i].id, ID);
-        if(strncmp(vide, buff, strlen(buff)) == 0){
+        if(strncmp(vide, buff, ID) == 0){
             free(list_diffuseur[i].id);
             free(list_diffuseur[i].ip1);
             free(list_diffuseur[i].ip2);
             free(list_diffuseur[i].port1);
             free(list_diffuseur[i].port2);
-            d.index = i;
             list_diffuseur[i] = d;
             free (vide);
             free (buff);
@@ -76,7 +78,7 @@ int ajoutDiffuseur (diffuseur d){
     }
     free (vide);
     free (buff);
-    printf("bug ajout diffusseur");
+    printf("bug ajout diffuseur");
     return -1;
 }
 
@@ -87,7 +89,7 @@ void suppDiffuseur (int index){
     free(list_diffuseur[index].port1);
     free(list_diffuseur[index].port2);
 
-    diffuseur vide = {.id = malloc(ID), .index = -1, .ip1 = malloc(IP), .ip2 = malloc(IP), .port1 = malloc(PORT), .port2 = malloc(PORT)};
+    diffuseur vide = {.id = malloc(ID), .ip1 = malloc(IP), .ip2 = malloc(IP), .port1 = malloc(PORT), .port2 = malloc(PORT)};
     
     memset(vide.id,'\0',ID);
     memset(vide.ip1,'\0',IP);
@@ -99,9 +101,6 @@ void suppDiffuseur (int index){
 }
 
 void ca_va(int descripteur,char * buff){
-    
-    //struct client * utilisateur = (struct client *)arg;
-    //int descripteur = utilisateur -> descripteur;
 
     char * tmpId  = malloc(sizeof(char) * ID);
     char * tmpIp1 = malloc(sizeof(char) * IP);
@@ -129,24 +128,22 @@ void ca_va(int descripteur,char * buff){
     printf("a : %s\n",tmpPort1);
     printf("a : %s\n",tmpPort2);*/
 
-    diffuseur d = {.id = malloc(ID), .index = -1, .ip1 = malloc(IP), .ip2 = malloc(IP), .port1 = malloc(PORT), .port2 = malloc(PORT)};
+    diffuseur d = {.id = malloc(ID), .ip1 = malloc(IP), .ip2 = malloc(IP), .port1 = malloc(PORT), .port2 = malloc(PORT)};
     strcpy(d.id,tmpId);
     strcpy(d.ip1,tmpIp1);
     strcpy(d.ip2,tmpIp2);
     strcpy(d.port1,tmpPort1);
     strcpy(d.port2,tmpPort2);
-    d.index = -1;
 
     int index = ajoutDiffuseur(d);
-    send(descripteur, "REOK", strlen("REOK"), 0);
+    send(descripteur, "REOK", 4, 0);
 
 
     /*printf("ID : %s\n",d.id);
     printf("IP1 : %s\n",d.ip1);
     printf("IP2 : %s\n",d.ip2);
     printf("PORT1 : %s\n",d.port1);
-    printf("PORT2 : %s\n",d.port2);
-    printf("INDEX : %d\n",d.index);*/
+    printf("PORT2 : %s\n",d.port2)*/
 
 
     //afficheDiffuseur ();
@@ -157,33 +154,27 @@ void ca_va(int descripteur,char * buff){
     free (tmpPort1);
     free (tmpPort2);
     
-    char * buff_cava = malloc (sizeof(char) * strlen("IMOK"));
+    char * buff_cava = malloc (sizeof(char) * 5);
     memset (buff_cava, '\0', strlen("IMOK"));
 
     fcntl(descripteur, F_SETFL, O_NONBLOCK);
-    struct pollfd p[1];
-    p[0].fd=descripteur;
-    p[0].events=POLLIN;
 
     while(1){
-        int ret=poll(p,1,5);
-        send(p[0].fd, "RUOK", strlen("RUOK"), 0);
-        if(ret>0){
-            if(p[0].revents==POLLIN){
-                recv(p[0].fd,buff_cava, strlen(buff_cava),0);
-                if (strncmp(buff_cava, "IMOK", strlen("IMOK")) == 0){
-                    continue;
-                }else{
-                    break;
-                }
-            }
+        memset(buff_cava, '\0', 5);
+        send(descripteur, "RUOK", 4, 0);
+        sleep(5);
+        recv(descripteur,buff_cava, 4,0);
+        printf("Valeur buff : %s\n",buff_cava);
+        
+        if (strncmp(buff_cava, "IMOK", 4) == 0){
+            continue;
         }else{
+            printf("Mauvaise reponse, adios.\n");
             break;
         }
     }
     suppDiffuseur (index);
     free(buff_cava);
-    close(descripteur);
 }
 
 void*communication(void *arg){
@@ -193,21 +184,22 @@ void*communication(void *arg){
     int descripteur = utilisateur -> descripteur;
 
     //buff pour le message + REGI
-    char buff[PORT*2 + ID + IP*2 + 5 + 4];
-    memset(buff,'\0',PORT*2 + ID + IP*2 + 5 + 4);
+    char buff[TAILLE_MSG];
+    memset(buff,'\0',TAILLE_MSG);
 
     int nbDiffuseur = 0;
 
-    char buffDiffuseur [PORT*2 + ID + IP*2 + 5 + 4];
-    memset(buffDiffuseur,'\0',PORT*2 + ID + IP*2 + 5 + 4);
+    char buffDiffuseur [TAILLE_MSG];
+    memset(buffDiffuseur,'\0',TAILLE_MSG);
 
     char envoieNumDiff [5 + 2];
     memset(envoieNumDiff,'\0', 5 + 2);
 
     while (1){
-        memset(buff,'\0',PORT*2 + ID + IP*2 + 5 + 4);
+        memset(buff,'\0',TAILLE_MSG);
         //reception du message dans le buff
-        int r = recv(descripteur,buff,(PORT*2 + ID + IP*2 + 5 + 4)*sizeof(char),0);
+        int r = recv(descripteur,buff,(TAILLE_MSG)*sizeof(char),0);
+        printf("AAAAAAAAAA = |%s|\n", buff );
         if (r <= 0){
             printf("Message vide, Fin de la connection ...\n");
             break;
@@ -215,6 +207,7 @@ void*communication(void *arg){
 
         //condition REGI
         if(strncmp(buff, "REGI ", strlen("REGI ")) == 0){
+            printf("condition REGI\n");
             if(diffuseurPresent() < 50){
                 
                 /*pthread_t th_diffuseur;
@@ -232,6 +225,7 @@ void*communication(void *arg){
 
         //condition LIST
         }else if (strncmp(buff, "LIST", 4) == 0){
+            printf("LIST");
             nbDiffuseur = diffuseurPresent();
             memset(envoieNumDiff,'\0', 7);
             sprintf(envoieNumDiff,"LINB %d",nbDiffuseur);
@@ -239,7 +233,7 @@ void*communication(void *arg){
 
             for(int i = 0; i < MAX_DIFFUSEUR; i++){
                 if(strcmp(list_diffuseur[i].id, "") != 0){
-                    memset(buffDiffuseur,'\0',PORT*2 + ID + IP*2 + 5 + 4);
+                    memset(buffDiffuseur,'\0',TAILLE_MSG);
                     memcpy(buffDiffuseur, "ITEM ", strlen("ITEM "));
                     memcpy(buffDiffuseur + 5, list_diffuseur[i].id, ID);
                     memcpy(buffDiffuseur + 5 + ID, " ", 1);
@@ -251,7 +245,7 @@ void*communication(void *arg){
                     memcpy(buffDiffuseur + 5 + ID + 1 + IP + 1 + PORT + 1 + IP, " ", 1);
                     memcpy(buffDiffuseur + 5 + ID + 1 + IP + 1 + PORT + 1 + IP + 1, list_diffuseur[i].port2, PORT);
 
-                    send(descripteur,buffDiffuseur, PORT*2 + ID + IP*2 + 5 + 4, 0);
+                    send(descripteur,buffDiffuseur, TAILLE_MSG, 0);
 
                 }
             }
@@ -271,7 +265,7 @@ int main(int argc, char**argv) {
     }
     list_diffuseur = malloc (sizeof(diffuseur) * MAX_DIFFUSEUR);
     for(int i = 0; i < MAX_DIFFUSEUR; i++){
-        diffuseur vide = {.id = malloc(ID), .index = -1, .ip1 = malloc(IP), .ip2 = malloc(IP), .port1 = malloc(PORT), .port2 = malloc(PORT)};;
+        diffuseur vide = {.id = malloc(ID), .ip1 = malloc(IP), .ip2 = malloc(IP), .port1 = malloc(PORT), .port2 = malloc(PORT)};;
         memset(vide.id,'\0',ID);
         memset(vide.ip1,'\0',IP);
         memset(vide.ip2,'\0',IP);
@@ -280,19 +274,7 @@ int main(int argc, char**argv) {
 
         list_diffuseur[i] = vide;
     }
-    /*memset(list_diffuseur[0].id,'\0',ID);
-    strcpy(list_diffuseur[0].id , "HELP####");
-    list_diffuseur[0].index = 0;
-    memset(list_diffuseur[0].ip1,'\0',IP);
-    strcpy(list_diffuseur[0].ip1 , "125.125.125.125");
-    memset(list_diffuseur[0].ip2,'\0',IP);
-    strcpy(list_diffuseur[0].ip2 , "125.125.125.124");
-    memset(list_diffuseur[0].port1,'\0',PORT);
-    strcpy(list_diffuseur[0].port1 , "1251");
-    memset(list_diffuseur[0].port2,'\0',PORT);
-    strcpy(list_diffuseur[0].port2 , "1251");*/
     
-
     int p=atoi(argv[1]);
     int sock=socket(PF_INET,SOCK_STREAM,0);
     struct sockaddr_in address_sock;
