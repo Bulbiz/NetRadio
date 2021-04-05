@@ -6,6 +6,8 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <pthread.h>
+#include <poll.h>
+#include <fcntl.h>
 
 #define MAX_DIFFUSEUR 50
 #define ID 8
@@ -134,6 +136,7 @@ void ca_va(int descripteur,char * buff){
     strcpy(d.port1,tmpPort1);
     strcpy(d.port2,tmpPort2);
     d.index = -1;
+
     int index = ajoutDiffuseur(d);
     send(descripteur, "REOK", strlen("REOK"), 0);
 
@@ -153,19 +156,34 @@ void ca_va(int descripteur,char * buff){
     free (tmpIp2);
     free (tmpPort1);
     free (tmpPort2);
+    
+    char * buff_cava = malloc (sizeof(char) * strlen("IMOK"));
+    memset (buff_cava, '\0', strlen("IMOK"));
+
+    fcntl(descripteur, F_SETFL, O_NONBLOCK);
+    struct pollfd p[1];
+    p[0].fd=descripteur;
+    p[0].events=POLLIN;
 
     while(1){
-        sleep(5);
-        send(descripteur, "RUOK", strlen("RUOK"), 0);
-        recv(descripteur,buff, strlen(buff),0);
-
-        if (strncmp(buff, "IMOK", strlen("IMOK")) == 0){
-            continue;
+        int ret=poll(p,1,5);
+        send(p[0].fd, "RUOK", strlen("RUOK"), 0);
+        if(ret>0){
+            if(p[0].revents==POLLIN){
+                recv(p[0].fd,buff_cava, strlen(buff_cava),0);
+                if (strncmp(buff_cava, "IMOK", strlen("IMOK")) == 0){
+                    continue;
+                }else{
+                    break;
+                }
+            }
         }else{
-            suppDiffuseur (index);
             break;
         }
     }
+    suppDiffuseur (index);
+    free(buff_cava);
+    close(descripteur);
 }
 
 void*communication(void *arg){
