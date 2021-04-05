@@ -52,7 +52,7 @@ int diffuseurPresent (){
     return count;
 }
 
-void ajoutDiffuseur (diffuseur d){
+int ajoutDiffuseur (diffuseur d){
     char * vide = malloc (sizeof(char) * ID);
     char * buff = malloc (sizeof(char) * ID);
     memset(vide,'\0', ID);
@@ -67,19 +67,23 @@ void ajoutDiffuseur (diffuseur d){
             free(list_diffuseur[i].port2);
             d.index = i;
             list_diffuseur[i] = d;
-            break;
+            free (vide);
+            free (buff);
+            return i;
         }
     }
     free (vide);
     free (buff);
+    printf("bug ajout diffusseur");
+    return -1;
 }
 
-void suppDiffuseur (diffuseur d){
-    free(list_diffuseur[d.index].id);
-    free(list_diffuseur[d.index].ip1);
-    free(list_diffuseur[d.index].ip2);
-    free(list_diffuseur[d.index].port1);
-    free(list_diffuseur[d.index].port2);
+void suppDiffuseur (int index){
+    free(list_diffuseur[index].id);
+    free(list_diffuseur[index].ip1);
+    free(list_diffuseur[index].ip2);
+    free(list_diffuseur[index].port1);
+    free(list_diffuseur[index].port2);
 
     diffuseur vide = {.id = malloc(ID), .index = -1, .ip1 = malloc(IP), .ip2 = malloc(IP), .port1 = malloc(PORT), .port2 = malloc(PORT)};
     
@@ -89,7 +93,7 @@ void suppDiffuseur (diffuseur d){
     memset(vide.port1,'\0',PORT);
     memset(vide.port2,'\0',PORT);
     
-    list_diffuseur[d.index] = vide;
+    list_diffuseur[index] = vide;
 }
 
 void ca_va(int descripteur,char * buff){
@@ -130,8 +134,9 @@ void ca_va(int descripteur,char * buff){
     strcpy(d.port1,tmpPort1);
     strcpy(d.port2,tmpPort2);
     d.index = -1;
-    ajoutDiffuseur(d);
+    int index = ajoutDiffuseur(d);
     send(descripteur, "REOK", strlen("REOK"), 0);
+
 
     /*printf("ID : %s\n",d.id);
     printf("IP1 : %s\n",d.ip1);
@@ -141,7 +146,7 @@ void ca_va(int descripteur,char * buff){
     printf("INDEX : %d\n",d.index);*/
 
 
-    afficheDiffuseur ();
+    //afficheDiffuseur ();
 
     free (tmpId);
     free (tmpIp1);
@@ -157,7 +162,7 @@ void ca_va(int descripteur,char * buff){
         if (strncmp(buff, "IMOK", strlen("IMOK")) == 0){
             continue;
         }else{
-            suppDiffuseur (d);
+            suppDiffuseur (index);
             break;
         }
     }
