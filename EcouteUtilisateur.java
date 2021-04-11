@@ -5,12 +5,10 @@ import java.lang.*;
 
 public class EcouteUtilisateur implements Runnable{
     private Socket socket;
-    private LinkedList<String> listMsg;
     private DiffuseMulticast liveStream;
 
-    public EcouteUtilisateur(Socket s, LinkedList<String> listMsg, DiffuseMulticast live){
+    public EcouteUtilisateur(Socket s, DiffuseMulticast live){
         this.socket = s;
-        this.listMsg = listMsg;
         this.liveStream = live;
     }
 
@@ -26,7 +24,7 @@ public class EcouteUtilisateur implements Runnable{
                 if (traitement[0].equals(Diffuseur.MESS) 
                     && traitement[1].length() <= 8 
                     && traitement[2].length() <= 140) {
-                    this.listMsg.add(traitement[2]);
+                    this.liveStream.getListMsg().add(traitement[2]);
 
                     pw.print(Diffuseur.ACKM + "\n");
                     pw.flush();
@@ -39,9 +37,9 @@ public class EcouteUtilisateur implements Runnable{
                         int posMsg = this.liveStream.getIndice();
                         for(int i = 0; i < nbMsg; i++){
                             if (posMsg == 0){
-                                posMsg = this.listMsg.size() - 1;
+                                posMsg = this.liveStream.getListMsg().size() - 1;
                             }
-                            String [] ancienMsg = this.listMsg.get(posMsg).split(" ");
+                            String [] ancienMsg = this.liveStream.getListMsg().get(posMsg).split(" ");
                             pw.print(Diffuseur.OLDM + ancienMsg[1] + ancienMsg[2] + ancienMsg[3] + "\n");
                             pw.flush();
                             posMsg--;
