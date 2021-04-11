@@ -12,6 +12,27 @@ public class EcouteUtilisateur implements Runnable{
         this.liveStream = live;
     }
 
+    public void receptionLast(PrintWriter pw, String [] traitement){
+        try{
+            int nbMsg = Integer.valueOf(traitement[1]);
+            int posMsg = this.liveStream.getIndice();
+            for(int i = 0; i < nbMsg; i++){
+                if (posMsg == 0){
+                    posMsg = this.liveStream.getListMsg().size() - 1;
+                }
+                String [] ancienMsg = this.liveStream.getListMsg().get(posMsg).split(" ");
+                pw.print(Diffuseur.OLDM + ancienMsg[1] + ancienMsg[2] + ancienMsg[3] + "\n");
+                pw.flush();
+                posMsg--;
+            }
+            pw.print(Diffuseur.ENDM + "\n");
+            pw.flush();
+        } catch(NumberFormatException e) {
+            pw.print("[Erreur] : Format de nombre invalide\n");
+            pw.flush();
+        }
+    }
+
     public void run(){
         try{
             while(true){
@@ -32,24 +53,7 @@ public class EcouteUtilisateur implements Runnable{
                     this.socket.close();
                     break;
                 } else if (traitement[0].equals(Diffuseur.LAST)) {
-                    try{
-                        int nbMsg = Integer.valueOf(traitement[1]);
-                        int posMsg = this.liveStream.getIndice();
-                        for(int i = 0; i < nbMsg; i++){
-                            if (posMsg == 0){
-                                posMsg = this.liveStream.getListMsg().size() - 1;
-                            }
-                            String [] ancienMsg = this.liveStream.getListMsg().get(posMsg).split(" ");
-                            pw.print(Diffuseur.OLDM + ancienMsg[1] + ancienMsg[2] + ancienMsg[3] + "\n");
-                            pw.flush();
-                            posMsg--;
-                        }
-                        pw.print(Diffuseur.ENDM + "\n");
-                        pw.flush();
-                    } catch(NumberFormatException e) {
-                        pw.print("[Erreur] : Format de nombre invalide\n");
-                        pw.flush();
-                    }
+                    receptionLast(pw, traitement);
                 } else {
                     pw.print("[Erreur] : Message au mauvais format\n");
                     pw.flush();
