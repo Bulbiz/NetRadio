@@ -236,8 +236,71 @@ void mess (){
 
 }
 
-void last (){
+/* Demande à l'utilisateur le port de la machine */
+char * demande_nbmess (){
+    char * buf;
+    int port = 0;
+    while(port == 0){
+        printf("Combien de message voulez vous recevoir ? [Exactement 2 chiffres]\n");
+        buf = lire(2);
+        if(est_un_nombre(buf) == 0)
+            port = 1;
+    }
+    printf("Vous demandez %s messages \n",buf);
+    return buf;
+}
 
+
+void list_message (int descripteur){
+    printf("Veuillez patientez, nous recevons la liste des derniers messages...\n");
+    char message_initial [8];
+    memset(message_initial,'\0',8);
+    recv(descripteur,message_initial,7,0);
+
+    if (strncmp(message_initial,"LINB",4) != 0){
+        printf("Le message reçu est mauvais !Il s'agissait de  : %s \nFermeture de la connection ... \n",message_initial);
+        close(descripteur);
+        return;
+    }
+
+    int nombre_de_message = atoi(message_initial + 5);
+    char buf [56];
+    for (int i = 0; i < nombre_de_message ; i ++ ){
+        memset(buf,'\0',56);
+        recv(descripteur,buf,55,0);
+        printf("J'ai reçu : %s" , buf);
+        if (strncmp(buf,"ITEM",4) == 0){
+            printf("Diffuseur : %s \n", buf + 5);
+        }else{
+            printf("Le message reçu est mauvais ! Fermeture de la connection ... \n");
+            close(descripteur);
+            return;
+        }
+    }
+    close(descripteur);
+}
+
+void last (){
+    char * machine = demande_nom_machine();
+    int port = demande_port();
+    char * nbmess = demande_nbmess();
+
+    signal(SIGPIPE, recuperateur_erreur);
+    int descripteur = connection (machine, port);
+
+    char * last_message = malloc(sizeof(char) * (8));
+    sprintf(last_message,"LAST %s",nbmess);
+
+    send(descripteur,last_message,7,0);
+
+    if(tout_se_passe_bien == 0){
+        //list_diffuseur(descripteur);
+        printf("Tout s'est bien passé");
+    }else{
+        printf("Il y a eu une erreur de connection, désolé ...\n");
+        tout_se_passe_bien = 0;
+        close(descripteur);
+    }
 }
 
 void hear (){
