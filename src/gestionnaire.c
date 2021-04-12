@@ -266,7 +266,7 @@ void*communication(void *arg){
     }else if (strncmp(buff, "LIST", 4) == 0){
         printf("Condition LIST\n");
         envoieListe (descripteur, buff, nbDiffuseur, envoieNumDiff, buffDiffuseur);
-        printf("Fin d'envoie de LISTE\n");
+        printf("Fin d'envoie de LIST\n");
     }else{
         printf("Votre message : %s\n",buff);
         printf ("Mauvais format du message, fermeture de la connection\n");
