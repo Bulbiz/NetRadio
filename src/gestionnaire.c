@@ -198,7 +198,7 @@ void*communication(void *arg){
         if(diffuseurPresent() < 50){
             ca_va(descripteur,buff);
         }else{
-            send(descripteur, "RENO", 4, 0);
+            send(descripteur, "RENO\r\n", 6, 0);
         }
 
     //condition LIST
