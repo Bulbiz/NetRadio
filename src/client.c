@@ -293,6 +293,7 @@ int connection_multidiffusion (char * machine, int port){
     int r = setsockopt(sock,SOL_SOCKET,SO_REUSEPORT,&ok,sizeof(ok));
     if (r < 0){
         printf("Il y a une erreur lors de la configuration des options !\n");
+        tout_se_passe_bien = -1;
     }
 
     struct sockaddr_in address_sock;
@@ -302,6 +303,7 @@ int connection_multidiffusion (char * machine, int port){
     r = bind(sock,(struct sockaddr *)&address_sock,sizeof(struct sockaddr_in));
     if (r < 0){
         printf("Il y a une erreur lors du bind !\n");
+        tout_se_passe_bien = -1;
     }
 
     struct ip_mreq mreq;
@@ -310,14 +312,15 @@ int connection_multidiffusion (char * machine, int port){
     r = setsockopt(sock,IPPROTO_IP,IP_ADD_MEMBERSHIP,&mreq,sizeof(mreq));
     if (r < 0){
         printf("Il y a une erreur lors de l'abonnement !\n");
+        tout_se_passe_bien = -1;
     }
 
     return sock;
 }
 
 void listen_to_infinity (int descripteur){
+    printf("Commencement de l'ecoute des messages...\n");
     char buf [162];
-
     while(1){
         memset(buf,'\0',162);
         recv(descripteur,buf,161,0);
@@ -326,8 +329,8 @@ void listen_to_infinity (int descripteur){
 }
 
 int demande_confirmation(){
-    printf("Attention, Vous ne pourrez PLUS JAMAIS revenir hors de l'ecoute... (sauf en faisant CTRL+C)\n");
-    printf("Voulez vous continuez ? Tapez [oui/non]\n");
+    printf("Attention, Vous ne pourrez PLUS JAMAIS revenir hors de l'ecoute!\n(sauf en faisant CTRL+C)\n");
+    printf("Voulez vous encore continuez ? Tapez [oui/non]\n");
     char * confirmation = lire(3);
     while (strcmp(confirmation,"oui") != 0 && strcmp(confirmation,"non")){
         printf("Voulez vous continuez ? [oui/non]");
