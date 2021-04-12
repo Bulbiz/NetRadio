@@ -72,10 +72,6 @@ char * lire_variable (int size){
     return lecture;
 }
 
-
-
-
-
 /* Permet d'obtenir l'adresse IPV4 à partir d'un nom de machine */
 int conversionAdresse (char * machine_name,struct in_addr * buf){
     struct addrinfo *first_info;
@@ -108,9 +104,10 @@ int connection (char * machine, int port){
 
 void list_diffuseur (int descripteur){
     printf("Veuillez patientez, nous recevons la liste des diffuseurs ...\n");
-    char message_initial [8];
-    memset(message_initial,'\0',8);
-    recv(descripteur,message_initial,7,0);
+    char message_initial [10];
+    memset(message_initial,'\0',10);
+    recv(descripteur,message_initial,9,0);
+    message_initial[7] = '\0';
 
     if (strncmp(message_initial,"LINB",4) != 0){
         printf("Le message reçu est mauvais !Il s'agissait de  : %s \nFermeture de la connection ... \n",message_initial);
@@ -119,10 +116,11 @@ void list_diffuseur (int descripteur){
     }
 
     int nombre_de_message = atoi(message_initial + 5);
-    char buf [56];
+    char buf [58];
     for (int i = 0; i < nombre_de_message ; i ++ ){
-        memset(buf,'\0',56);
-        recv(descripteur,buf,55,0);
+        memset(buf,'\0',58);
+        recv(descripteur,buf,57,0);
+        buf[55] = '\0';
         printf("J'ai reçu : %s" , buf);
         if (strncmp(buf,"ITEM",4) == 0){
             printf("Diffuseur : %s \n", buf + 5);
@@ -178,7 +176,7 @@ void list (){
 
     signal(SIGPIPE, recuperateur_erreur);
     int descripteur = connection (machine, port);
-    send(descripteur,"LIST",strlen("LIST"),0);
+    send(descripteur,"LIST\r\n",7,0);
 
     if(tout_se_passe_bien == 0){
         list_diffuseur(descripteur);
@@ -206,20 +204,22 @@ void mess (){
     int descripteur = connection (machine, port);
 
     //Créer les buffers
-    char * colis = malloc (sizeof(char) * (4 + 1 + 8 + 1 + 140 + 1));
-    char * receveur = malloc (sizeof(char) * 5);
+    char * colis = malloc (sizeof(char) * (157));
 
     //Envoie le message
-    sprintf(colis,"MESS %s %s",pseudo,message);
-    int size = send(descripteur,colis,4 + 1 + 8 + 1 + 140,0);
+    sprintf(colis,"MESS %s %s\r\n",pseudo,message);
+    int size = send(descripteur,colis,157,0);
     if (size < 0){
         printf("Il y a eu une erreur dans l'envoi du message!\n");
         close(descripteur);
         return;
     }
 
+    printf("Veuillez patienter, nous attendons une réponse du Diffuseur ...\n");
+    char * receveur = malloc (sizeof(char) * 7);
+    memset(receveur,'\0',7);
     //Reçoit le message
-    size = recv(descripteur,receveur,4,0);
+    size = recv(descripteur,receveur,6,0);
     if (size < 0){
         printf("Il y a eu une erreur dans la reception du message!\n");
         close(descripteur);
@@ -227,7 +227,7 @@ void mess (){
     }
 
     //Vérifie que le message à bien été reçu
-    receveur[size] = '\0';
+    receveur[4] = '\0';
     if(strcmp(receveur,"ACKM") == 0)
         printf("Le message à bien été reçu par le diffuseur!\n");
     else
@@ -250,15 +250,15 @@ char * demande_nbmess (){
     return buf;
 }
 
-
 void list_message (int descripteur){
     printf("Veuillez patientez, nous recevons la liste des derniers messages...\n");
-    char message_initial [160];
-    memset(message_initial,'\0',160);
+    char message_initial [162];
+    memset(message_initial,'\0',162);
     while(strncmp(message_initial,"ENDM",4) != 0){
-        memset(message_initial,'\0',160);
-        recv(descripteur,message_initial,159,0);
-        printf("J'ai reçu : %s" , message_initial);
+        memset(message_initial,'\0',162);
+        recv(descripteur,message_initial,161,0);
+        message_initial[159] = '\0';
+        printf("J'ai reçu : %s\n" , message_initial);
     }
     printf("Fin de la reception des messages !\n");
     close(descripteur);
@@ -272,10 +272,10 @@ void last (){
     signal(SIGPIPE, recuperateur_erreur);
     int descripteur = connection (machine, port);
 
-    char * last_message = malloc(sizeof(char) * (8));
-    sprintf(last_message,"LAST %s",nbmess);
+    char * last_message = malloc(sizeof(char) * (10));
+    sprintf(last_message,"LAST %s\r\n",nbmess);
 
-    send(descripteur,last_message,8,0);
+    send(descripteur,last_message,10,0);
 
     if(tout_se_passe_bien == 0){
         list_message(descripteur);
