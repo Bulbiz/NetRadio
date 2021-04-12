@@ -21,7 +21,7 @@ struct client {
     int descripteur;
     u_int32_t ip;
 };
-// test : REGI 48484848 123.123.123.123 1234 123.123.123.124 1523
+// test : REGI 48484848 123.123.123.123 1234 123.123.123.124 1523\r\n
 typedef struct diffuseur {
     char  * id;     //Taille 8
     char * ip1;     //Taille 15
@@ -35,24 +35,50 @@ typedef struct diffuseur {
 // stockage des infos des diffuseurs
 diffuseur * list_diffuseur;
 
-void afficheDiffuseur (){
-    for (int i = 0; i < MAX_DIFFUSEUR; i++){
-        if (strcmp(list_diffuseur[i].id, "") != 0){
-            printf("ID : %s\n",list_diffuseur[i].id);
-            printf("IP1 : %s\n",list_diffuseur[i].ip1);
-            printf("IP2 : %s\n",list_diffuseur[i].ip2);
-            printf("PORT1 : %s\n",list_diffuseur[i].port1);
-            printf("PORT2 : %s\n\n",list_diffuseur[i].port2);
-        }
-    }
-}
-
 int diffuseurPresent (){
     int count = 0;
     for (int i = 0; i < MAX_DIFFUSEUR; i++)
         if (strcmp(list_diffuseur[i].id, "") != 0)
             count ++;
     return count;
+}
+
+void afficheListeDiffuseur (){
+    char * tmpId = malloc (sizeof(char) * (ID + 1));
+    char * tmpIp = malloc (sizeof(char) * (IP + 1));
+    char * tmpPort = malloc (sizeof(char) * (PORT + 1));
+    memset (tmpId, '\0', ID + 1);
+    memset (tmpIp, '\0', IP + 1);
+    memset (tmpPort, '\0', PORT + 1);
+    int nbDiffuseur = diffuseurPresent ();
+    printf("Liste de diffuseur : taille %d\n", nbDiffuseur);
+    for (int i = 0; i < MAX_DIFFUSEUR; i++){
+        if (strcmp(list_diffuseur[i].id, "") != 0){
+            memset (tmpId, '\0', ID + 1);
+            memset (tmpIp, '\0', IP + 1);
+            memset (tmpPort, '\0', PORT + 1);
+            strncat (tmpId, list_diffuseur[i].id, ID);
+            strncat (tmpIp, list_diffuseur[i].ip1, IP);
+            strncat (tmpPort, list_diffuseur[i].port1, PORT);
+
+            printf("ID : %s\n",tmpId);
+
+            printf("IP1 : %s\n",tmpIp);
+
+            memset (tmpIp, '\0', IP + 1);
+            strncat (tmpIp, list_diffuseur[i].ip2, IP);
+            printf("IP2 : %s\n",tmpIp);
+
+            printf("PORT1 : %s\n",tmpPort);
+
+            memset (tmpPort, '\0', PORT + 1);
+            strncat (tmpPort, list_diffuseur[i].port2, PORT);
+            printf("PORT2 : %s\n\n",tmpPort);
+        }
+    }
+    free (tmpId);
+    free (tmpIp);
+    free (tmpPort);
 }
 
 //ajoute le diffuseur et retour son positionnement dans la liste
@@ -136,6 +162,7 @@ void ca_va(int descripteur,char * buff){
 
     int index = ajoutDiffuseur(d);
     send(descripteur, "REOK\r\n", 6, 0);
+    afficheListeDiffuseur ();
 
     free (tmpId);
     free (tmpIp1);
@@ -150,11 +177,13 @@ void ca_va(int descripteur,char * buff){
 
     while(1){
         memset(buff_cava, '\0', 7);
-        send(descripteur, "RUOK/r/n", 6, 0);
+        send(descripteur, "RUOK\r\n", 6, 0);
         sleep(30);
         recv(descripteur,buff_cava, 6,0);
+        printf("buff ca va : %s\n", buff_cava);
         
-        if (strncmp(buff_cava, "IMOK\r\n", 6) == 0){
+        if (strncmp(buff_cava, "IMOK", 4) == 0){
+            printf("Bonne réponse, je continue.\n");
             continue;
         }else{
             printf("Mauvaise réponse, adios.\n");
