@@ -241,8 +241,8 @@ char * demande_nbmess (){
     char * buf;
     int port = 0;
     while(port == 0){
-        printf("Combien de message voulez vous recevoir ? [Exactement 2 chiffres]\n");
-        buf = lire(2);
+        printf("Combien de message voulez vous recevoir ? [Entre 000 et 999]\n");
+        buf = lire(3);
         if(est_un_nombre(buf) == 0)
             port = 1;
     }
@@ -253,30 +253,14 @@ char * demande_nbmess (){
 
 void list_message (int descripteur){
     printf("Veuillez patientez, nous recevons la liste des derniers messages...\n");
-    char message_initial [8];
-    memset(message_initial,'\0',8);
-    recv(descripteur,message_initial,7,0);
-
-    if (strncmp(message_initial,"LINB",4) != 0){
-        printf("Le message reçu est mauvais !Il s'agissait de  : %s \nFermeture de la connection ... \n",message_initial);
-        close(descripteur);
-        return;
+    char message_initial [160];
+    memset(message_initial,'\0',160);
+    while(strncmp(message_initial,"ENDM",4) != 0){
+        memset(message_initial,'\0',160);
+        recv(descripteur,message_initial,159,0);
+        printf("J'ai reçu : %s" , message_initial);
     }
-
-    int nombre_de_message = atoi(message_initial + 5);
-    char buf [56];
-    for (int i = 0; i < nombre_de_message ; i ++ ){
-        memset(buf,'\0',56);
-        recv(descripteur,buf,55,0);
-        printf("J'ai reçu : %s" , buf);
-        if (strncmp(buf,"ITEM",4) == 0){
-            printf("Diffuseur : %s \n", buf + 5);
-        }else{
-            printf("Le message reçu est mauvais ! Fermeture de la connection ... \n");
-            close(descripteur);
-            return;
-        }
-    }
+    printf("Fin de la reception des messages !\n");
     close(descripteur);
 }
 
@@ -291,11 +275,10 @@ void last (){
     char * last_message = malloc(sizeof(char) * (8));
     sprintf(last_message,"LAST %s",nbmess);
 
-    send(descripteur,last_message,7,0);
+    send(descripteur,last_message,8,0);
 
     if(tout_se_passe_bien == 0){
-        //list_diffuseur(descripteur);
-        printf("Tout s'est bien passé");
+        list_message(descripteur);
     }else{
         printf("Il y a eu une erreur de connection, désolé ...\n");
         tout_se_passe_bien = 0;
