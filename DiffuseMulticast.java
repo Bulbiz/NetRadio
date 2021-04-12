@@ -6,6 +6,7 @@ public class DiffuseMulticast implements Runnable{
     private LinkedList<String> diffuseMsg;
     private int portMulticast;
     private String adresseMulticast;
+    private int indice = 0;
 
     public DiffuseMulticast(LinkedList<String> diffuseMsg, int port, String adresse){
         this.diffuseMsg = diffuseMsg;
@@ -17,22 +18,29 @@ public class DiffuseMulticast implements Runnable{
         return this.diffuseMsg;
     }
 
+    public int getIndice(){
+        return this.indice;
+    }
+
+    private synchronized void incrementeIndice(){
+        this.indice++;
+    }
+
     public void run(){
         try{
             DatagramSocket dso = new DatagramSocket();
             byte[]data;
-            int i = 0;
             InetSocketAddress ia = new InetSocketAddress(adresseMulticast, portMulticast);
             
-            //TODO : rajouter un else pour wait() le thread
             while(true){
-                if (i < diffuseMsg.size()){
-                    data = this.diffuseMsg.get(i).getBytes();
-                    DatagramPacket msg = new DatagramPacket(data, data.length, ia);
-                    i++;
-                    dso.send(msg);
-                    Thread.sleep(500);
+                if (indice >= diffuseMsg.size()){
+                    indice = 0;
                 }
+                data = this.diffuseMsg.get(indice).getBytes();
+                DatagramPacket msg = new DatagramPacket(data, data.length, ia);
+                incrementeIndice();
+                dso.send(msg);
+                Thread.sleep(500);
             }
         } catch(Exception e){
             e.printStackTrace();
