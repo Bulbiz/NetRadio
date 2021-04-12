@@ -35,17 +35,17 @@ typedef struct diffuseur {
 // stockage des infos des diffuseurs
 diffuseur * list_diffuseur;
 
-void print (char * s){
-    printf ("%s\n",s);
-}
-
 void afficheDiffuseur (){
+    char * vide = malloc (sizeof(char) * ID);
+    memset(vide,'\0', ID);
     for (int i = 0; i < MAX_DIFFUSEUR; i++){
-        printf("ID : %s\n",list_diffuseur[i].id);
-        printf("IP1 : %s\n",list_diffuseur[i].ip1);
-        printf("IP2 : %s\n",list_diffuseur[i].ip2);
-        printf("PORT1 : %s\n",list_diffuseur[i].port1);
-        printf("PORT2 : %s\n\n",list_diffuseur[i].port2);       
+        if ( strncmp(vide, list_diffuseur[i].id, ID) != 0){
+            printf("ID : %s\n",list_diffuseur[i].id);
+            printf("IP1 : %s\n",list_diffuseur[i].ip1);
+            printf("IP2 : %s\n",list_diffuseur[i].ip2);
+            printf("PORT1 : %s\n",list_diffuseur[i].port1);
+            printf("PORT2 : %s\n\n",list_diffuseur[i].port2);
+        }
     }
 }
 
@@ -56,6 +56,7 @@ int diffuseurPresent (){
     for (int i = 0; i < MAX_DIFFUSEUR; i++)
         if ( strncmp(vide, list_diffuseur[i].id, ID) != 0)
             count ++;
+    free(vide);
     return count;
 }
 
@@ -147,9 +148,6 @@ void ca_va(int descripteur,char * buff){
     printf("PORT1 : %s\n",d.port1);
     printf("PORT2 : %s\n",d.port2)*/
 
-
-    //afficheDiffuseur ();
-
     free (tmpId);
     free (tmpIp1);
     free (tmpIp2);
@@ -164,14 +162,13 @@ void ca_va(int descripteur,char * buff){
     while(1){
         memset(buff_cava, '\0', 5);
         send(descripteur, "RUOK", 4, 0);
-        sleep(100000);
+        sleep(30);
         recv(descripteur,buff_cava, 4,0);
-        printf("Valeur buff : %s\n",buff_cava);
         
         if (strncmp(buff_cava, "IMOK", 4) == 0){
             continue;
         }else{
-            printf("Mauvaise reponse, adios.\n");
+            printf("Mauvaise réponse, adios.\n");
             break;
         }
     }
@@ -201,7 +198,6 @@ void*communication(void *arg){
         memset(buff,'\0',TAILLE_MSG);
         //reception du message dans le buff
         int r = recv(descripteur,buff,(TAILLE_MSG)*sizeof(char),0);
-        printf("AAAAAAAAAA = |%s|\n", buff );
         if (r <= 0){
             printf("Message vide, Fin de la connection ...\n");
             break;
@@ -209,15 +205,8 @@ void*communication(void *arg){
 
         //condition REGI
         if(strncmp(buff, "REGI ", strlen("REGI ")) == 0){
-            printf("condition REGI\n");
+            printf("Condition REGI\n");
             if(diffuseurPresent() < 50){
-                
-                /*pthread_t th_diffuseur;
-                int r2=pthread_create(&th_diffuseur,NULL,ca_va, &utilisateur);
-                if(r2!=0){
-                    printf("Probleme de creation de thread");
-                    exit(0);
-                }*/
                 ca_va(descripteur,buff);
                 break;
             }else{
@@ -227,15 +216,15 @@ void*communication(void *arg){
 
         //condition LIST
         }else if (strncmp(buff, "LIST", 4) == 0){
-            printf("LIST");
+            printf("Condition LIST\n");
 
             nbDiffuseur = diffuseurPresent();
-            printf("nbdiff : %d",nbDiffuseur);
+            printf("nbdiffuseur présent : %d\n",nbDiffuseur);
 
             memset(envoieNumDiff,'\0', 7);
             sprintf(envoieNumDiff,"LINB %d",nbDiffuseur);
             send(descripteur,envoieNumDiff, 7, 0);
-            printf("envoieNumdiff : %s",envoieNumDiff);
+            printf("Message d'envoieNumdiffuseur : %s\n",envoieNumDiff);
 
             for(int i = 0; i < MAX_DIFFUSEUR; i++){
                 if(strcmp(list_diffuseur[i].id, "") != 0){
@@ -251,10 +240,12 @@ void*communication(void *arg){
                     memcpy(buffDiffuseur + 5 + ID + 1 + IP + 1 + PORT + 1 + IP, " ", 1);
                     memcpy(buffDiffuseur + 5 + ID + 1 + IP + 1 + PORT + 1 + IP + 1, list_diffuseur[i].port2, PORT);
 
-                    int r = send(descripteur,buffDiffuseur, TAILLE_MSG, 0);
-                    printf("verif : %d",r);
-                    printf("buffDiffuseur : %s",buffDiffuseur);
+                    printf("buffDiffuseur : %s\n",buffDiffuseur);
 
+                    int r = send(descripteur,buffDiffuseur, TAILLE_MSG, 0);
+                    if (r < 0){
+                        printf("erreur sur l'envoie des listes de diffusseur");
+                    }
                 }
             }
             break;
