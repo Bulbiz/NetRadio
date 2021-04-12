@@ -286,8 +286,76 @@ void last (){
     }
 }
 
-void hear (){
+/* Connecte à une machine sur un port en Multidiffusion */
+int connection_multidiffusion (char * machine, int port){
+    int sock = socket(PF_INET,SOCK_DGRAM,0);
+    int ok = 1;
+    int r = setsockopt(sock,SOL_SOCKET,SO_REUSEPORT,&ok,sizeof(ok));
+    if (r < 0){
+        printf("Il y a une erreur lors de la configuration des options !\n");
+    }
 
+    struct sockaddr_in address_sock;
+    address_sock.sin_family=AF_INET;
+    address_sock.sin_port=htons(port);
+    address_sock.sin_addr.s_addr=htonl(INADDR_ANY);
+    r = bind(sock,(struct sockaddr *)&address_sock,sizeof(struct sockaddr_in));
+    if (r < 0){
+        printf("Il y a une erreur lors du bind !\n");
+    }
+
+    struct ip_mreq mreq;
+    mreq.imr_multiaddr.s_addr = inet_addr(machine);
+    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+    r = setsockopt(sock,IPPROTO_IP,IP_ADD_MEMBERSHIP,&mreq,sizeof(mreq));
+    if (r < 0){
+        printf("Il y a une erreur lors de l'abonnement !\n");
+    }
+
+    return sock;
+}
+
+void listen_to_infinity (int descripteur){
+    char buf [162];
+
+    while(1){
+        memset(buf,'\0',162);
+        recv(descripteur,buf,161,0);
+        printf("Message recu :%s\n",buf);
+    }
+}
+
+int demande_confirmation(){
+    printf("Attention, Vous ne pourrez PLUS JAMAIS revenir hors de l'ecoute... (sauf en faisant CTRL+C)\n");
+    printf("Voulez vous continuez ? Tapez [oui/non]\n");
+    char * confirmation = lire(3);
+    while (strcmp(confirmation,"oui") != 0 && strcmp(confirmation,"non")){
+        printf("Voulez vous continuez ? [oui/non]");
+        confirmation = lire(3);
+    }
+    if (strcmp(confirmation,"oui") == 0){
+        return 1;
+    }else{
+        return -1;
+    }
+}
+void hear (){
+    int verification = demande_confirmation();
+    if (verification < 0)
+        return;
+    char * machine = demande_nom_machine();
+    int port = demande_port();
+
+    signal(SIGPIPE, recuperateur_erreur);
+    int descripteur = connection_multidiffusion (machine, port);
+
+    if(tout_se_passe_bien == 0){
+        listen_to_infinity (descripteur);
+    }else{
+        printf("Il y a eu une erreur de connection, désolé ...\n");
+        tout_se_passe_bien = 0;
+        close(descripteur);
+    }
 }
 
 void help (){
