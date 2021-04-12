@@ -51,8 +51,10 @@ void afficheDiffuseur (){
 
 int diffuseurPresent (){
     int count = 0;
+    char * vide = malloc (sizeof(char) * ID);
+    memset(vide,'\0', ID);
     for (int i = 0; i < MAX_DIFFUSEUR; i++)
-        if ( strncmp(list_diffuseur[i].id,"\0", strlen("\0")) != 0)
+        if ( strncmp(vide, list_diffuseur[i].id, ID) != 0)
             count ++;
     return count;
 }
@@ -162,7 +164,7 @@ void ca_va(int descripteur,char * buff){
     while(1){
         memset(buff_cava, '\0', 5);
         send(descripteur, "RUOK", 4, 0);
-        sleep(5);
+        sleep(100000);
         recv(descripteur,buff_cava, 4,0);
         printf("Valeur buff : %s\n",buff_cava);
         
@@ -226,10 +228,14 @@ void*communication(void *arg){
         //condition LIST
         }else if (strncmp(buff, "LIST", 4) == 0){
             printf("LIST");
+
             nbDiffuseur = diffuseurPresent();
+            printf("nbdiff : %d",nbDiffuseur);
+
             memset(envoieNumDiff,'\0', 7);
             sprintf(envoieNumDiff,"LINB %d",nbDiffuseur);
             send(descripteur,envoieNumDiff, 7, 0);
+            printf("envoieNumdiff : %s",envoieNumDiff);
 
             for(int i = 0; i < MAX_DIFFUSEUR; i++){
                 if(strcmp(list_diffuseur[i].id, "") != 0){
@@ -245,10 +251,13 @@ void*communication(void *arg){
                     memcpy(buffDiffuseur + 5 + ID + 1 + IP + 1 + PORT + 1 + IP, " ", 1);
                     memcpy(buffDiffuseur + 5 + ID + 1 + IP + 1 + PORT + 1 + IP + 1, list_diffuseur[i].port2, PORT);
 
-                    send(descripteur,buffDiffuseur, TAILLE_MSG, 0);
+                    int r = send(descripteur,buffDiffuseur, TAILLE_MSG, 0);
+                    printf("verif : %d",r);
+                    printf("buffDiffuseur : %s",buffDiffuseur);
 
                 }
             }
+            break;
         }
     }
     //free(arg);
