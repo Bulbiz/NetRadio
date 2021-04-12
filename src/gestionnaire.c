@@ -14,7 +14,7 @@
 #define ID 8
 #define PORT 4
 #define IP 15
-#define TAILLE_MSG 55
+#define TAILLE_MSG 57       // 9 (REGI + 5 espaces) + ID + 2*IP + 2*PORT + 2(\r\n)
 
 //adresse ip et descripteur du client
 struct client {
@@ -36,10 +36,8 @@ typedef struct diffuseur {
 diffuseur * list_diffuseur;
 
 void afficheDiffuseur (){
-    char * vide = malloc (sizeof(char) * ID);
-    memset(vide,'\0', ID);
     for (int i = 0; i < MAX_DIFFUSEUR; i++){
-        if ( strncmp(vide, list_diffuseur[i].id, ID) != 0){
+        if (strcmp(list_diffuseur[i].id, "") != 0){
             printf("ID : %s\n",list_diffuseur[i].id);
             printf("IP1 : %s\n",list_diffuseur[i].ip1);
             printf("IP2 : %s\n",list_diffuseur[i].ip2);
@@ -51,35 +49,29 @@ void afficheDiffuseur (){
 
 int diffuseurPresent (){
     int count = 0;
-    char * vide = malloc (sizeof(char) * ID);
-    memset(vide,'\0', ID);
     for (int i = 0; i < MAX_DIFFUSEUR; i++)
-        if ( strncmp(vide, list_diffuseur[i].id, ID) != 0)
+        if (strcmp(list_diffuseur[i].id, "") != 0)
             count ++;
-    free(vide);
     return count;
 }
 
+//ajoute le diffuseur et retour son positionnement dans la liste
 int ajoutDiffuseur (diffuseur d){
-    char * vide = malloc (sizeof(char) * ID);
     char * buff = malloc (sizeof(char) * ID);
-    memset(vide,'\0', ID);
     memset(buff,'\0', ID);
     for (int i = 0; i < MAX_DIFFUSEUR; i++){
         memcpy(buff, list_diffuseur[i].id, ID);
-        if(strncmp(vide, buff, ID) == 0){
+        if(strcmp(list_diffuseur[i].id, "") == 0){
             free(list_diffuseur[i].id);
             free(list_diffuseur[i].ip1);
             free(list_diffuseur[i].ip2);
             free(list_diffuseur[i].port1);
             free(list_diffuseur[i].port2);
             list_diffuseur[i] = d;
-            free (vide);
             free (buff);
             return i;
         }
     }
-    free (vide);
     free (buff);
     printf("bug ajout diffuseur");
     return -1;
@@ -103,6 +95,18 @@ void suppDiffuseur (int index){
     list_diffuseur[index] = vide;
 }
 
+//vérifie le nombre et ajoute un 0 devant si x < 10
+char * verifNombre (int x){
+    char * nombre = malloc (sizeof(char) * 2);
+    memset (nombre, '\0', 2);
+    if ( x < 10 ){
+        sprintf(nombre,"0%d",x);
+        return nombre;
+    }
+    sprintf(nombre,"%d",x);
+    return nombre;
+}
+
 void ca_va(int descripteur,char * buff){
 
     char * tmpId  = malloc(sizeof(char) * ID);
@@ -122,14 +126,6 @@ void ca_va(int descripteur,char * buff){
     strncat (tmpPort1, buff + 5 + ID + 2 + IP, PORT);
     strncat (tmpIp2, buff + 5 + ID + 3 + IP + PORT, IP);
     strncat (tmpPort2, buff + 5 + ID + 4 + 2*IP + PORT, PORT);
-    
-    /*printf("a : %s\n",buff);
-    printf("a : %s\n",buff + 5);
-    printf("a : %s\n",tmpId);
-    printf("a : %s\n",tmpIp1);
-    printf("a : %s\n",tmpIp2);
-    printf("a : %s\n",tmpPort1);
-    printf("a : %s\n",tmpPort2);*/
 
     diffuseur d = {.id = malloc(ID), .ip1 = malloc(IP), .ip2 = malloc(IP), .port1 = malloc(PORT), .port2 = malloc(PORT)};
     strcpy(d.id,tmpId);
@@ -139,14 +135,7 @@ void ca_va(int descripteur,char * buff){
     strcpy(d.port2,tmpPort2);
 
     int index = ajoutDiffuseur(d);
-    send(descripteur, "REOK", 4, 0);
-
-
-    /*printf("ID : %s\n",d.id);
-    printf("IP1 : %s\n",d.ip1);
-    printf("IP2 : %s\n",d.ip2);
-    printf("PORT1 : %s\n",d.port1);
-    printf("PORT2 : %s\n",d.port2)*/
+    send(descripteur, "REOK\r\n", 6, 0);
 
     free (tmpId);
     free (tmpIp1);
@@ -154,18 +143,18 @@ void ca_va(int descripteur,char * buff){
     free (tmpPort1);
     free (tmpPort2);
     
-    char * buff_cava = malloc (sizeof(char) * 5);
-    memset (buff_cava, '\0', strlen("IMOK"));
+    char * buff_cava = malloc (sizeof(char) * 7);
+    memset (buff_cava, '\0', 7);
 
     fcntl(descripteur, F_SETFL, O_NONBLOCK);
 
     while(1){
-        memset(buff_cava, '\0', 5);
-        send(descripteur, "RUOK", 4, 0);
+        memset(buff_cava, '\0', 7);
+        send(descripteur, "RUOK/r/n", 6, 0);
         sleep(30);
-        recv(descripteur,buff_cava, 4,0);
+        recv(descripteur,buff_cava, 6,0);
         
-        if (strncmp(buff_cava, "IMOK", 4) == 0){
+        if (strncmp(buff_cava, "IMOK\r\n", 6) == 0){
             continue;
         }else{
             printf("Mauvaise réponse, adios.\n");
@@ -182,76 +171,75 @@ void*communication(void *arg){
     struct client * utilisateur = (struct client *)arg;
     int descripteur = utilisateur -> descripteur;
 
-    //buff pour le message + REGI
-    char buff[TAILLE_MSG];
-    memset(buff,'\0',TAILLE_MSG);
+    //buff pour le message + 1 au cas où
+    char * buff = malloc (sizeof(char) * TAILLE_MSG + 1);
+    memset(buff,'\0',TAILLE_MSG + 1);
 
     int nbDiffuseur = 0;
 
-    char buffDiffuseur [TAILLE_MSG];
-    memset(buffDiffuseur,'\0',TAILLE_MSG);
+    //buff pour le diffuseur + 1 au cas où
+    char * buffDiffuseur = malloc (sizeof(char) * TAILLE_MSG + 1);
+    memset(buffDiffuseur,'\0',TAILLE_MSG + 1);
 
-    char envoieNumDiff [5 + 2];
-    memset(envoieNumDiff,'\0', 5 + 2);
+    //LIMB + espace + nb entre 00 à 99 + 1 au cas où = 8
+    char * envoieNumDiff = malloc (sizeof(char) * 8);
+    memset(envoieNumDiff,'\0', 8);
 
-    while (1){
-        memset(buff,'\0',TAILLE_MSG);
-        //reception du message dans le buff
-        int r = recv(descripteur,buff,(TAILLE_MSG)*sizeof(char),0);
-        if (r <= 0){
-            printf("Message vide, Fin de la connection ...\n");
-            break;
+    //reception du message dans le buff
+    int r = recv(descripteur,buff,(TAILLE_MSG)*sizeof(char),0);
+    if (r <= 0){
+        printf("Message vide, Fin de la connection ...\n");
+    }
+
+    //condition REGI
+    if(strncmp(buff, "REGI ", 5) == 0){
+        printf("Condition REGI\n");
+
+        if(diffuseurPresent() < 50){
+            ca_va(descripteur,buff);
+        }else{
+            send(descripteur, "RENO", 4, 0);
         }
 
-        //condition REGI
-        if(strncmp(buff, "REGI ", strlen("REGI ")) == 0){
-            printf("Condition REGI\n");
-            if(diffuseurPresent() < 50){
-                ca_va(descripteur,buff);
-                break;
-            }else{
-                send(descripteur, "RENO", strlen("RENO"), 0);
-                break;
-            }
+    //condition LIST
+    }else if (strncmp(buff, "LIST", 4) == 0){
+        printf("Condition LIST\n");
 
-        //condition LIST
-        }else if (strncmp(buff, "LIST", 4) == 0){
-            printf("Condition LIST\n");
+        nbDiffuseur = diffuseurPresent();
+        printf("nbdiffuseur présent : %d\n",nbDiffuseur);
+        sprintf(envoieNumDiff,"LINB %s",verifNombre(nbDiffuseur));
+        send(descripteur,envoieNumDiff, 7, 0);
+        printf("Message d'envoieNumdiffuseur : %s\n",envoieNumDiff);
 
-            nbDiffuseur = diffuseurPresent();
-            printf("nbdiffuseur présent : %d\n",nbDiffuseur);
+        for(int i = 0; i < MAX_DIFFUSEUR; i++){
+            if(strcmp(list_diffuseur[i].id, "") != 0){
+                memset(buffDiffuseur,'\0',TAILLE_MSG + 1);
+                memcpy(buffDiffuseur, "ITEM ", 5);
+                memcpy(buffDiffuseur + 5, list_diffuseur[i].id, ID);
+                memcpy(buffDiffuseur + 5 + ID, " ", 1);
+                memcpy(buffDiffuseur + 5 + ID + 1 , list_diffuseur[i].ip1, IP);
+                memcpy(buffDiffuseur + 5 + ID + 1 + IP, " ", 1);
+                memcpy(buffDiffuseur + 5 + ID + 1 + IP + 1, list_diffuseur[i].port1, PORT);
+                memcpy(buffDiffuseur + 5 + ID + 1 + IP + 1 + PORT, " ", 1);
+                memcpy(buffDiffuseur + 5 + ID + 1 + IP + 1 + PORT + 1, list_diffuseur[i].ip2, IP);
+                memcpy(buffDiffuseur + 5 + ID + 1 + IP + 1 + PORT + 1 + IP, " ", 1);
+                memcpy(buffDiffuseur + 5 + ID + 1 + IP + 1 + PORT + 1 + IP + 1, list_diffuseur[i].port2, PORT);
 
-            memset(envoieNumDiff,'\0', 7);
-            sprintf(envoieNumDiff,"LINB %d",nbDiffuseur);
-            send(descripteur,envoieNumDiff, 7, 0);
-            printf("Message d'envoieNumdiffuseur : %s\n",envoieNumDiff);
+                printf("buffDiffuseur : %s\n",buffDiffuseur);
 
-            for(int i = 0; i < MAX_DIFFUSEUR; i++){
-                if(strcmp(list_diffuseur[i].id, "") != 0){
-                    memset(buffDiffuseur,'\0',TAILLE_MSG);
-                    memcpy(buffDiffuseur, "ITEM ", strlen("ITEM "));
-                    memcpy(buffDiffuseur + 5, list_diffuseur[i].id, ID);
-                    memcpy(buffDiffuseur + 5 + ID, " ", 1);
-                    memcpy(buffDiffuseur + 5 + ID + 1 , list_diffuseur[i].ip1, IP);
-                    memcpy(buffDiffuseur + 5 + ID + 1 + IP, " ", 1);
-                    memcpy(buffDiffuseur + 5 + ID + 1 + IP + 1, list_diffuseur[i].port1, PORT);
-                    memcpy(buffDiffuseur + 5 + ID + 1 + IP + 1 + PORT, " ", 1);
-                    memcpy(buffDiffuseur + 5 + ID + 1 + IP + 1 + PORT + 1, list_diffuseur[i].ip2, IP);
-                    memcpy(buffDiffuseur + 5 + ID + 1 + IP + 1 + PORT + 1 + IP, " ", 1);
-                    memcpy(buffDiffuseur + 5 + ID + 1 + IP + 1 + PORT + 1 + IP + 1, list_diffuseur[i].port2, PORT);
-
-                    printf("buffDiffuseur : %s\n",buffDiffuseur);
-
-                    int r = send(descripteur,buffDiffuseur, TAILLE_MSG, 0);
-                    if (r < 0){
-                        printf("erreur sur l'envoie des listes de diffusseur");
-                    }
+                int r = send(descripteur,buffDiffuseur, TAILLE_MSG, 0);
+                if (r < 0){
+                    printf("erreur sur l'envoie des listes de diffuseurs");
                 }
             }
-            break;
         }
+    }else{
+        printf("Votre message : %s",buff);
+        printf ("Mauvais format du message, fermeture de la connection\n");
     }
-    //free(arg);
+    free (buff);
+    free (buffDiffuseur);
+    free (envoieNumDiff);  
     close(descripteur);
     return NULL;
 }
@@ -263,6 +251,7 @@ int main(int argc, char**argv) {
         printf("Erreur il faut fournir un numero de port");
         return 0;
     }
+    //remplissage d'une liste vide de diffuseur
     list_diffuseur = malloc (sizeof(diffuseur) * MAX_DIFFUSEUR);
     for(int i = 0; i < MAX_DIFFUSEUR; i++){
         diffuseur vide = {.id = malloc(ID), .ip1 = malloc(IP), .ip2 = malloc(IP), .port1 = malloc(PORT), .port2 = malloc(PORT)};;
@@ -301,7 +290,7 @@ int main(int argc, char**argv) {
                 pthread_t th;
                 int r2=pthread_create(&th,NULL,communication, &utilisateur);
                 if(r2!=0){
-                    printf("Probleme de creation de thread");
+                    printf("Problème de creation de thread");
                     exit(0);
                 }
             }
