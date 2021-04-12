@@ -72,10 +72,6 @@ char * lire_variable (int size){
     return lecture;
 }
 
-
-
-
-
 /* Permet d'obtenir l'adresse IPV4 à partir d'un nom de machine */
 int conversionAdresse (char * machine_name,struct in_addr * buf){
     struct addrinfo *first_info;
@@ -108,9 +104,10 @@ int connection (char * machine, int port){
 
 void list_diffuseur (int descripteur){
     printf("Veuillez patientez, nous recevons la liste des diffuseurs ...\n");
-    char message_initial [8];
-    memset(message_initial,'\0',8);
-    recv(descripteur,message_initial,7,0);
+    char message_initial [10];
+    memset(message_initial,'\0',10);
+    recv(descripteur,message_initial,9,0);
+    message_initial[7] = '\0';
 
     if (strncmp(message_initial,"LINB",4) != 0){
         printf("Le message reçu est mauvais !Il s'agissait de  : %s \nFermeture de la connection ... \n",message_initial);
@@ -119,10 +116,11 @@ void list_diffuseur (int descripteur){
     }
 
     int nombre_de_message = atoi(message_initial + 5);
-    char buf [56];
+    char buf [58];
     for (int i = 0; i < nombre_de_message ; i ++ ){
-        memset(buf,'\0',56);
-        recv(descripteur,buf,55,0);
+        memset(buf,'\0',58);
+        recv(descripteur,buf,57,0);
+        buf[55] = '\0';
         printf("J'ai reçu : %s" , buf);
         if (strncmp(buf,"ITEM",4) == 0){
             printf("Diffuseur : %s \n", buf + 5);
@@ -178,7 +176,7 @@ void list (){
 
     signal(SIGPIPE, recuperateur_erreur);
     int descripteur = connection (machine, port);
-    send(descripteur,"LIST",strlen("LIST"),0);
+    send(descripteur,"LIST\r\n",7,0);
 
     if(tout_se_passe_bien == 0){
         list_diffuseur(descripteur);
@@ -206,20 +204,22 @@ void mess (){
     int descripteur = connection (machine, port);
 
     //Créer les buffers
-    char * colis = malloc (sizeof(char) * (4 + 1 + 8 + 1 + 140 + 1));
-    char * receveur = malloc (sizeof(char) * 5);
+    char * colis = malloc (sizeof(char) * (157));
 
     //Envoie le message
-    sprintf(colis,"MESS %s %s",pseudo,message);
-    int size = send(descripteur,colis,4 + 1 + 8 + 1 + 140,0);
+    sprintf(colis,"MESS %s %s\r\n",pseudo,message);
+    int size = send(descripteur,colis,157,0);
     if (size < 0){
         printf("Il y a eu une erreur dans l'envoi du message!\n");
         close(descripteur);
         return;
     }
 
+    printf("Veuillez patienter, nous attendons une réponse du Diffuseur ...\n");
+    char * receveur = malloc (sizeof(char) * 7);
+    memset(receveur,'\0',7);
     //Reçoit le message
-    size = recv(descripteur,receveur,4,0);
+    size = recv(descripteur,receveur,6,0);
     if (size < 0){
         printf("Il y a eu une erreur dans la reception du message!\n");
         close(descripteur);
@@ -227,7 +227,7 @@ void mess (){
     }
 
     //Vérifie que le message à bien été reçu
-    receveur[size] = '\0';
+    receveur[4] = '\0';
     if(strcmp(receveur,"ACKM") == 0)
         printf("Le message à bien été reçu par le diffuseur!\n");
     else
@@ -241,8 +241,8 @@ char * demande_nbmess (){
     char * buf;
     int port = 0;
     while(port == 0){
-        printf("Combien de message voulez vous recevoir ? [Exactement 2 chiffres]\n");
-        buf = lire(2);
+        printf("Combien de message voulez vous recevoir ? [Entre 000 et 999]\n");
+        buf = lire(3);
         if(est_un_nombre(buf) == 0)
             port = 1;
     }
@@ -250,33 +250,17 @@ char * demande_nbmess (){
     return buf;
 }
 
-
 void list_message (int descripteur){
     printf("Veuillez patientez, nous recevons la liste des derniers messages...\n");
-    char message_initial [8];
-    memset(message_initial,'\0',8);
-    recv(descripteur,message_initial,7,0);
-
-    if (strncmp(message_initial,"LINB",4) != 0){
-        printf("Le message reçu est mauvais !Il s'agissait de  : %s \nFermeture de la connection ... \n",message_initial);
-        close(descripteur);
-        return;
+    char message_initial [162];
+    memset(message_initial,'\0',162);
+    while(strncmp(message_initial,"ENDM",4) != 0){
+        memset(message_initial,'\0',162);
+        recv(descripteur,message_initial,161,0);
+        message_initial[159] = '\0';
+        printf("J'ai reçu : %s\n" , message_initial);
     }
-
-    int nombre_de_message = atoi(message_initial + 5);
-    char buf [56];
-    for (int i = 0; i < nombre_de_message ; i ++ ){
-        memset(buf,'\0',56);
-        recv(descripteur,buf,55,0);
-        printf("J'ai reçu : %s" , buf);
-        if (strncmp(buf,"ITEM",4) == 0){
-            printf("Diffuseur : %s \n", buf + 5);
-        }else{
-            printf("Le message reçu est mauvais ! Fermeture de la connection ... \n");
-            close(descripteur);
-            return;
-        }
-    }
+    printf("Fin de la reception des messages !\n");
     close(descripteur);
 }
 
@@ -288,14 +272,13 @@ void last (){
     signal(SIGPIPE, recuperateur_erreur);
     int descripteur = connection (machine, port);
 
-    char * last_message = malloc(sizeof(char) * (8));
-    sprintf(last_message,"LAST %s",nbmess);
+    char * last_message = malloc(sizeof(char) * (10));
+    sprintf(last_message,"LAST %s\r\n",nbmess);
 
-    send(descripteur,last_message,7,0);
+    send(descripteur,last_message,10,0);
 
     if(tout_se_passe_bien == 0){
-        //list_diffuseur(descripteur);
-        printf("Tout s'est bien passé");
+        list_message(descripteur);
     }else{
         printf("Il y a eu une erreur de connection, désolé ...\n");
         tout_se_passe_bien = 0;
@@ -303,8 +286,79 @@ void last (){
     }
 }
 
-void hear (){
+/* Connecte à une machine sur un port en Multidiffusion */
+int connection_multidiffusion (char * machine, int port){
+    int sock = socket(PF_INET,SOCK_DGRAM,0);
+    int ok = 1;
+    int r = setsockopt(sock,SOL_SOCKET,SO_REUSEPORT,&ok,sizeof(ok));
+    if (r < 0){
+        printf("Il y a une erreur lors de la configuration des options !\n");
+        tout_se_passe_bien = -1;
+    }
 
+    struct sockaddr_in address_sock;
+    address_sock.sin_family=AF_INET;
+    address_sock.sin_port=htons(port);
+    address_sock.sin_addr.s_addr=htonl(INADDR_ANY);
+    r = bind(sock,(struct sockaddr *)&address_sock,sizeof(struct sockaddr_in));
+    if (r < 0){
+        printf("Il y a une erreur lors du bind !\n");
+        tout_se_passe_bien = -1;
+    }
+
+    struct ip_mreq mreq;
+    mreq.imr_multiaddr.s_addr = inet_addr(machine);
+    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+    r = setsockopt(sock,IPPROTO_IP,IP_ADD_MEMBERSHIP,&mreq,sizeof(mreq));
+    if (r < 0){
+        printf("Il y a une erreur lors de l'abonnement !\n");
+        tout_se_passe_bien = -1;
+    }
+
+    return sock;
+}
+
+void listen_to_infinity (int descripteur){
+    printf("Commencement de l'ecoute des messages...\n");
+    char buf [162];
+    while(1){
+        memset(buf,'\0',162);
+        recv(descripteur,buf,161,0);
+        printf("Message recu :%s\n",buf);
+    }
+}
+
+int demande_confirmation(){
+    printf("Attention, Vous ne pourrez PLUS JAMAIS revenir hors de l'ecoute!\n(sauf en faisant CTRL+C)\n");
+    printf("Voulez vous encore continuez ? Tapez [oui/non]\n");
+    char * confirmation = lire(3);
+    while (strcmp(confirmation,"oui") != 0 && strcmp(confirmation,"non")){
+        printf("Voulez vous continuez ? [oui/non]");
+        confirmation = lire(3);
+    }
+    if (strcmp(confirmation,"oui") == 0){
+        return 1;
+    }else{
+        return -1;
+    }
+}
+void hear (){
+    int verification = demande_confirmation();
+    if (verification < 0)
+        return;
+    char * machine = demande_nom_machine();
+    int port = demande_port();
+
+    signal(SIGPIPE, recuperateur_erreur);
+    int descripteur = connection_multidiffusion (machine, port);
+
+    if(tout_se_passe_bien == 0){
+        listen_to_infinity (descripteur);
+    }else{
+        printf("Il y a eu une erreur de connection, désolé ...\n");
+        tout_se_passe_bien = 0;
+        close(descripteur);
+    }
 }
 
 void help (){
