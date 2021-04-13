@@ -18,6 +18,12 @@ public class DiffuseMulticast implements Runnable{
         return this.diffuseMsg;
     }
 
+    public void ajoutMsg(String s){
+        if(s.length() <= Diffuseur.TAILLEMAXMSG){
+            this.diffuseMsg.add(s);
+        }
+    }
+
     public int getIndice(){
         return this.indice;
     }

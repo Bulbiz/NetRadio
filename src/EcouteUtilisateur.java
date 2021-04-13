@@ -43,8 +43,9 @@ public class EcouteUtilisateur implements Runnable{
                 String [] traitement = msg.split(" ");
 
                 if (traitement[0].equals(Diffuseur.MESS) 
-                    && traitement[1].length() <= 8 
-                    && traitement[2].length() <= 140) {
+                    && traitement[1].length() <= Diffuseur.TAILLEID
+                    && traitement[2].length() <= Diffuseur.TAILLEMAXMSG) {
+                    //FIXME : mauvais ajout de message
                     this.liveStream.getListMsg().add(traitement[2]);
 
                     pw.print(Diffuseur.ACKM + "\r\n");
