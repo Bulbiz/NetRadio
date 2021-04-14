@@ -16,6 +16,8 @@
 #define IP 15
 #define TAILLE_MSG 57       // 9 (REGI + 5 espaces) + ID + 2*IP + 2*PORT + 2(\r\n)
 
+pthread_mutex_t verrou = PTHREAD_MUTEX_INITIALIZER;
+
 //adresse ip et descripteur du client
 struct client {
     int descripteur;
@@ -36,14 +38,17 @@ typedef struct diffuseur {
 diffuseur * list_diffuseur;
 
 int diffuseurPresent (){
+    pthread_mutex_lock(&verrou);
     int count = 0;
     for (int i = 0; i < MAX_DIFFUSEUR; i++)
         if (strcmp(list_diffuseur[i].id, "") != 0)
             count ++;
+    pthread_mutex_unlock(&verrou);
     return count;
 }
 
 void afficheListeDiffuseur (){
+    pthread_mutex_lock(&verrou);
     char * tmpId = malloc (sizeof(char) * (ID + 1));
     char * tmpIp = malloc (sizeof(char) * (IP + 1));
     char * tmpPort = malloc (sizeof(char) * (PORT + 1));
@@ -76,6 +81,7 @@ void afficheListeDiffuseur (){
             printf("PORT2 : %s\n\n",tmpPort);
         }
     }
+    pthread_mutex_unlock(&verrou);
     free (tmpId);
     free (tmpIp);
     free (tmpPort);
@@ -83,6 +89,7 @@ void afficheListeDiffuseur (){
 
 //ajoute le diffuseur et retour son positionnement dans la liste
 int ajoutDiffuseur (diffuseur d){
+    pthread_mutex_lock(&verrou);
     char * buff = malloc (sizeof(char) * ID);
     memset(buff,'\0', ID);
     for (int i = 0; i < MAX_DIFFUSEUR; i++){
@@ -95,15 +102,18 @@ int ajoutDiffuseur (diffuseur d){
             free(list_diffuseur[i].port2);
             list_diffuseur[i] = d;
             free (buff);
+            pthread_mutex_unlock(&verrou);
             return i;
         }
     }
     free (buff);
     printf("bug ajout diffuseur");
+    pthread_mutex_unlock(&verrou);
     return -1;
 }
 
 void suppDiffuseur (int index){
+    pthread_mutex_lock(&verrou);
     free(list_diffuseur[index].id);
     free(list_diffuseur[index].ip1);
     free(list_diffuseur[index].ip2);
@@ -119,6 +129,7 @@ void suppDiffuseur (int index){
     memset(vide.port2,'\0',PORT);
     
     list_diffuseur[index] = vide;
+    pthread_mutex_unlock(&verrou);
 }
 
 //vérifie le nombre et ajoute un 0 devant si x < 10
