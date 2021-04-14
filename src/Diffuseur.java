@@ -26,7 +26,7 @@ public class Diffuseur{
     public static final int FORMATPORT = 9999;
 
     public Diffuseur(String id, int portRecv, int portDiff, DiffuseMulticast dm){
-        if (portDiff < FORMATPORT || portRecv < FORMATPORT || id.length() > TAILLEID){
+        if (portDiff > FORMATPORT || portRecv > FORMATPORT || id.length() > TAILLEID){
             System.out.println("[Erreur] : Impossible d'assembler le diffuseur, rappel : le numéro des ports doit être inférieur à 9999 et l'identifiant ne doit faire plus de 8 caractères\n");
             System.exit(1);
         }
