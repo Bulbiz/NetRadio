@@ -6,10 +6,15 @@ import java.lang.*;
 public class EcouteUtilisateur implements Runnable{
     private Socket socket;
     private DiffuseMulticast liveStream;
+    private Diffuseur parent;
 
     public EcouteUtilisateur(Socket s, DiffuseMulticast live){
         this.socket = s;
         this.liveStream = live;
+    }
+
+    public void setDiffuseur(Diffuseur d){
+        this.parent = d;
     }
 
     public void receptionLast(PrintWriter pw, String [] traitement){
@@ -45,8 +50,7 @@ public class EcouteUtilisateur implements Runnable{
                 if (traitement[0].equals(Diffuseur.MESS) 
                     && traitement[1].length() <= Diffuseur.TAILLEID
                     && traitement[2].length() <= Diffuseur.TAILLEMAXMSG) {
-                    //FIXME : mauvais ajout de message
-                    this.liveStream.getListMsg().add(traitement[2]);
+                    liveStream.getListMsg().add(parent.assembleMsgDiff(traitement[1], traitement[2]));
 
                     pw.print(Diffuseur.ACKM + "\r\n");
                     pw.flush();

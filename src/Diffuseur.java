@@ -8,8 +8,8 @@ public class Diffuseur{
     private InetSocketAddress multiDiff;
     private int portMultiDiff;
     private LinkedList<String> listMsg;
-    private DiffuseMulticast live;
-    private EcouteUtilisateur ecoute;
+    /*private DiffuseMulticast live;
+    private EcouteUtilisateur ecoute;*/
 
     public int numMsg = 0;
     public static final String ACKM = "ACKM";
@@ -25,7 +25,7 @@ public class Diffuseur{
     public static final int TAILLEID = 8;
     public static final int FORMATPORT = 9999;
 
-    public Diffuseur(String id, int portRecv, int portDiff, DiffuseMulticast dm){
+    public Diffuseur(String id, int portRecv, int portDiff){
         if (portDiff > FORMATPORT || portRecv > FORMATPORT || id.length() > TAILLEID){
             System.out.println("[Erreur] : Impossible d'assembler le diffuseur, rappel : le numéro des ports doit être inférieur à 9999 et l'identifiant ne doit faire plus de 8 caractères\n");
             System.exit(1);
@@ -35,13 +35,12 @@ public class Diffuseur{
         this.portMsg = portRecv;
         this.multiDiff = new InetSocketAddress(portDiff);
         this.portMultiDiff = portDiff;
-        this.live = dm;
         this.listMsg = new LinkedList<String>();
     }
 
-    public void setEcoute(EcouteUtilisateur eu){
+    /*public void setEcoute(EcouteUtilisateur eu){
         this.ecoute = eu;
-    }
+    }*/
 
     /*public Diffuseur(String id, DatagramSocket recv, InetSocketAddress multiDiff, DatagramSocket portDiff) throws Exception{
         if (id.length() > 8){
@@ -104,8 +103,9 @@ public class Diffuseur{
         LinkedList<String> msgDiff = new LinkedList<String>();
 
         DiffuseMulticast dm = new DiffuseMulticast(msgDiff, stringToInt(args[1]), args[3]);
-        Diffuseur d = new Diffuseur(args[0], stringToInt(args[2]), stringToInt(args[1]), dm);
+        Diffuseur d = new Diffuseur(args[0], stringToInt(args[2]), stringToInt(args[1]));
         EcouteUtilisateur eu = null;
+        dm.setDiffuseur(d);
 
         dm.ajoutMsg(d.assembleMsgDiff(args[0], "The apocalypse shall soon be realised..."));
         dm.ajoutMsg(d.assembleMsgDiff(args[0], "Are there any grounds for that boldness of yours?"));
@@ -128,7 +128,7 @@ public class Diffuseur{
             ServerSocket server = new ServerSocket(stringToInt(args[2]));
             Socket socket = server.accept();
             eu = new EcouteUtilisateur(socket, dm);
-            d.setEcoute(eu);
+            eu.setDiffuseur(d);
             Thread ecoute = new Thread(eu);
             Thread stream = new Thread(dm);
             ecoute.start();
