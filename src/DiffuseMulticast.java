@@ -6,6 +6,7 @@ public class DiffuseMulticast implements Runnable{
     private LinkedList<String> diffuseMsg;
     private int portMulticast;
     private String adresseMulticast;
+    private Diffuseur parent;
     private int indice = 0;
 
     public DiffuseMulticast(LinkedList<String> diffuseMsg, int port, String adresse){
@@ -14,8 +15,18 @@ public class DiffuseMulticast implements Runnable{
         this.adresseMulticast = adresse;
     }
 
+    public void setDiffuseur(Diffuseur d){
+        this.parent = d;
+    }
+
     public LinkedList<String> getListMsg(){
         return this.diffuseMsg;
+    }
+
+    public void ajoutMsg(String s){
+        if(s.length() <= Diffuseur.TAILLEMAXMSG){
+            this.diffuseMsg.add(s);
+        }
     }
 
     public int getIndice(){

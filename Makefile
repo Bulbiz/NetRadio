@@ -8,4 +8,4 @@ all :
 clean :
 	rm client
 	rm gestionnaire
-	rm Diffuseur.class
+	rm *.class
