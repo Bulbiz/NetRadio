@@ -1,3 +1,4 @@
+package src;
 import java.net.*;
 import java.util.*;
 import java.io.*;
@@ -46,6 +47,9 @@ public class EcouteUtilisateur implements Runnable{
 
                 String msg = br.readLine();
                 String [] traitement = msg.split(" ");
+                for (String s :traitement ){
+                    System.out.println("découpe " + s);
+                }
 
                 if (traitement[0].equals(Diffuseur.MESS) 
                     && traitement[1].length() <= Diffuseur.TAILLEID
