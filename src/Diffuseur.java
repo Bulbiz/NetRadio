@@ -32,7 +32,7 @@ public class Diffuseur{
             System.exit(1);
         }
         
-        this.identifiant = id;
+        this.identifiant = formatageString(id, TAILLEID);
         this.portMsg = portRecv;
         this.multiDiff = new InetSocketAddress(portDiff);
         this.portMultiDiff = portDiff;
@@ -55,7 +55,25 @@ public class Diffuseur{
         this.listMsg = new LinkedList<String>();
     }*/
 
-    //TODO: bricoler l'affichage en 4 bits du numéro
+    public static String formatageString(String s, int iterFormat){
+        for(int i = s.length(); i < iterFormat; i++){
+            s = s + "#";
+        }
+        return s;
+    }
+
+    public String formatageEntier(int i){
+        if(i < 10){
+            return "000"+i;
+        } else if(i < 100){
+            return "00"+i;
+        } else if(i < 1000){
+            return "0"+i;
+        } else {
+            return String.valueOf(i);
+        }
+    } 
+
     public String assembleMsgDiff(String id, String message){
         if (message.length() > TAILLEMAXMSG){
             return "";
@@ -67,7 +85,7 @@ public class Diffuseur{
             numMsg++;
         }
 
-        return DIFF + " " + numMsg + " " + id + " " + message + "\r\n";
+        return DIFF + " " + formatageEntier(numMsg) + " " + id + " " + formatageString(message, TAILLEMAXMSG) + "\r\n";
     }
 
     public String assembleMsgEnregistrement(InetSocketAddress ip2){
@@ -95,6 +113,8 @@ public class Diffuseur{
      * [2] : port écoute
      * [3] : adresse multidiffusion
      * [4] : port gestionnaire
+     * 
+     * Ex : java src/Diffuseur joker123 5252 5151 225.10.20.30 4242
      */
     public static void main(String [] args){
         if(args.length < 5){
@@ -128,13 +148,15 @@ public class Diffuseur{
         
         try{
             ServerSocket server = new ServerSocket(stringToInt(args[2]));
-            Socket socket = server.accept();
-            eu = new EcouteUtilisateur(socket, dm);
-            eu.setDiffuseur(d);
-            Thread ecoute = new Thread(eu);
             Thread stream = new Thread(dm);
-            ecoute.start();
             stream.start();
+            while(true){
+                Socket socket = server.accept();
+                eu = new EcouteUtilisateur(socket, dm);
+                eu.setDiffuseur(d);
+                Thread ecoute = new Thread(eu);
+                ecoute.start();
+            }
         } catch(Exception e) {
             System.out.println(e);
             e.printStackTrace();

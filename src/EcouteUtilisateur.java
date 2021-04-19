@@ -1,6 +1,9 @@
 package src;
 import java.net.*;
 import java.util.*;
+
+import src.Diffuseur;
+
 import java.io.*;
 import java.lang.*;
 
@@ -18,16 +21,44 @@ public class EcouteUtilisateur implements Runnable{
         this.parent = d;
     }
 
+    public String[] traitementRequete(String s){
+        String [] stock;
+        if(s.substring(0, 4).equals(Diffuseur.LAST)){
+            stock = new String[2];
+            stock[0] = s.substring(0, 4);
+            stock[1] = s.substring(5, 8);
+        } else if (s.substring(0, 4).equals(Diffuseur.DIFF)){
+            stock = new String[3];
+            stock[0] = s.substring(5, 9);
+            stock[1] = s.substring(10, 18);
+            stock[2] = s.substring(19, s.length()-2);
+        } else {
+            stock = new String[3];
+            stock[0] = s.substring(0, 4);
+            stock[1] = s.substring(5, 13);
+            stock[2] = s.substring(14, s.length()-2);
+        }
+ 
+        return stock;
+    }
+
     public void receptionLast(PrintWriter pw, String [] traitement){
         try{
             int nbMsg = Integer.valueOf(traitement[1]);
             int posMsg = this.liveStream.getIndice();
+
+            if(nbMsg > this.liveStream.getEnvoye()){
+                nbMsg = this.liveStream.getEnvoye();
+            }
+
             for(int i = 0; i < nbMsg; i++){
-                if (posMsg == 0){
+                if (posMsg == -1){
                     posMsg = this.liveStream.getListMsg().size() - 1;
                 }
-                String [] ancienMsg = this.liveStream.getListMsg().get(posMsg).split(" ");
-                pw.print(Diffuseur.OLDM + ancienMsg[1] + ancienMsg[2] + ancienMsg[3] + "\r\n");
+
+                String [] ancienMsg = traitementRequete(this.liveStream.getListMsg().get(posMsg));
+
+                pw.print(Diffuseur.OLDM + " " + ancienMsg[0] + " " + ancienMsg[1] + " " + ancienMsg[2] + "\r\n");
                 pw.flush();
                 posMsg--;
             }
@@ -46,10 +77,12 @@ public class EcouteUtilisateur implements Runnable{
                 PrintWriter pw = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
 
                 String msg = br.readLine();
-                String [] traitement = msg.split(" ");
-                for (String s :traitement ){
-                    System.out.println("découpe " + s);
+
+                if(msg == null){
+                    continue;
                 }
+
+                String [] traitement = traitementRequete(msg);
 
                 if (traitement[0].equals(Diffuseur.MESS) 
                     && traitement[1].length() <= Diffuseur.TAILLEID
