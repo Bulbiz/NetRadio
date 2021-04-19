@@ -12,7 +12,7 @@ public class Diffuseur{
     /*private DiffuseMulticast live;
     private EcouteUtilisateur ecoute;*/
 
-    public int numMsg = 0;
+    //public int numMsg = 0;
     public static final String ACKM = "ACKM";
     public static final String ENDM = "ENDM";
     public static final String LAST = "LAST";
@@ -62,7 +62,7 @@ public class Diffuseur{
         return s;
     }
 
-    public String formatageEntier(int i){
+    public static String formatageEntier(int i){
         if(i < 10){
             return "000"+i;
         } else if(i < 100){
@@ -79,13 +79,13 @@ public class Diffuseur{
             return "";
         }
 
-        if (numMsg == 9999){
+        /*if (numMsg == 9999){
             numMsg = 0;
         } else {
             numMsg++;
-        }
+        }*/
 
-        return DIFF + " " + formatageEntier(numMsg) + " " + id + " " + formatageString(message, TAILLEMAXMSG) + "\r\n";
+        return id + " " + formatageString(message, TAILLEMAXMSG) + "\r\n";
     }
 
     public String assembleMsgEnregistrement(InetSocketAddress ip2){
@@ -114,7 +114,7 @@ public class Diffuseur{
      * [3] : adresse multidiffusion
      * [4] : port gestionnaire
      * 
-     * Ex : java src/Diffuseur joker123 5252 5151 225.10.20.30 4242
+     * Ex : java src/Diffuseur joker123 5151 5252 225.10.20.30 4242
      */
     public static void main(String [] args){
         if(args.length < 5){

@@ -27,16 +27,15 @@ public class EcouteUtilisateur implements Runnable{
             stock = new String[2];
             stock[0] = s.substring(0, 4);
             stock[1] = s.substring(5, 8);
-        } else if (s.substring(0, 4).equals(Diffuseur.DIFF)){
-            stock = new String[3];
-            stock[0] = s.substring(5, 9);
-            stock[1] = s.substring(10, 18);
-            stock[2] = s.substring(19, s.length()-2);
-        } else {
+        } else if (s.substring(0, 4).equals(Diffuseur.MESS)){
             stock = new String[3];
             stock[0] = s.substring(0, 4);
             stock[1] = s.substring(5, 13);
             stock[2] = s.substring(14, s.length()-2);
+        } else {
+            stock = new String[2];
+            stock[0] = s.substring(0, 8);
+            stock[1] = s.substring(9, s.length()-2);
         }
  
         return stock;
@@ -46,9 +45,10 @@ public class EcouteUtilisateur implements Runnable{
         try{
             int nbMsg = Integer.valueOf(traitement[1]);
             int posMsg = this.liveStream.getIndice();
+            int msgEnvoy = this.liveStream.getEnvoye();
 
-            if(nbMsg > this.liveStream.getEnvoye()){
-                nbMsg = this.liveStream.getEnvoye();
+            if(nbMsg > msgEnvoy){
+                nbMsg = msgEnvoy;
             }
 
             for(int i = 0; i < nbMsg; i++){
@@ -58,9 +58,10 @@ public class EcouteUtilisateur implements Runnable{
 
                 String [] ancienMsg = traitementRequete(this.liveStream.getListMsg().get(posMsg));
 
-                pw.print(Diffuseur.OLDM + " " + ancienMsg[0] + " " + ancienMsg[1] + " " + ancienMsg[2] + "\r\n");
+                pw.print(Diffuseur.OLDM + " " + Diffuseur.formatageEntier(msgEnvoy) + " " + ancienMsg[0] + " " + ancienMsg[1] + "\r\n");
                 pw.flush();
                 posMsg--;
+                msgEnvoy--;
             }
             pw.print(Diffuseur.ENDM + "\r\n");
             pw.flush();

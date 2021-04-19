@@ -45,7 +45,7 @@ public class DiffuseMulticast implements Runnable{
     }
 
     private synchronized void incrementeIndice(){
-        this.indice++;
+        this.indice = (this.indice + 1) % diffuseMsg.size();
     }
 
     public void run(){
@@ -55,15 +55,15 @@ public class DiffuseMulticast implements Runnable{
             InetSocketAddress ia = new InetSocketAddress(adresseMulticast, portMulticast);
             
             while(true){
-                if (indice >= diffuseMsg.size()){
+                /*if (indice >= diffuseMsg.size()){
                     indice = 0;
-                }
-                data = this.diffuseMsg.get(indice).getBytes();
+                }*/
+                data = (Diffuseur.DIFF + " " + Diffuseur.formatageEntier(msgEnvoye) + " " + this.diffuseMsg.get(indice)).getBytes();
                 DatagramPacket msg = new DatagramPacket(data, data.length, ia);
-                incrementeIndice();
                 dso.send(msg);
+                incrementeIndice();
                 msgEnvoye++;
-                Thread.sleep(3000);
+                Thread.sleep(2000);
             }
         } catch(Exception e){
             e.printStackTrace();
