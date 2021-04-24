@@ -144,6 +144,34 @@ char * verifNombre (int x){
     return nombre;
 }
 
+void extension_mess (char * buff){
+    pthread_mutex_lock(&verrou);
+    for (int i = 0; i < MAX_DIFFUSEUR; i++){
+        if (strcmp(list_diffuseur[i].id, "") != 0){
+
+            int p=atoi(list_diffuseur[i].port2);
+            int sock=socket(PF_INET,SOCK_STREAM,0);
+            struct sockaddr_in address_sock;
+            address_sock.sin_family=AF_INET;
+            address_sock.sin_port=htons(p);
+            address_sock.sin_addr.s_addr=htonl(INADDR_ANY);
+            int r=bind(sock,(struct sockaddr *)&address_sock,sizeof(struct sockaddr_in));
+            if(r==0){
+                r=listen(sock,0);
+                struct sockaddr_in caller;
+                socklen_t size=sizeof(caller);
+                int *sock2=(int *)malloc(sizeof(int));
+                *sock2=accept(sock,(struct sockaddr *)&caller,&size);
+                if(sock2>=0){
+                    send (*sock2,buff,161,0);
+                }
+                close(*sock2);
+            }        
+        }
+    }
+    pthread_mutex_unlock(&verrou);
+}
+
 void ca_va(int descripteur,char * buff){
 
     char * tmpId  = malloc(sizeof(char) * ID);
@@ -264,8 +292,8 @@ void*communication(void *arg){
 
     //condition REGI
     if(strncmp(buff, "REGI ", 5) == 0){
-        printf("Condition REGI\n");
 
+        printf("Condition REGI\n");
         if(diffuseurPresent() < 50){
             ca_va(descripteur,buff);
         }else{
@@ -275,9 +303,19 @@ void*communication(void *arg){
 
     //condition LIST
     }else if (strncmp(buff, "LIST", 4) == 0){
+
         printf("Condition LIST\n");
         envoieListe (descripteur, buff, nbDiffuseur, envoieNumDiff, buffDiffuseur);
         printf("Fin d'envoie de LIST\n");
+
+    //condition MESS
+    }else if (strncmp(buff, "MESS", 4) == 0){
+
+        printf("Condition MESS\n");
+        send(descripteur, "ACKM\r\n", 6, 0);
+        extension_mess(buff);
+        printf("Fin d'envoie de MESS\n");
+
     }else{
         printf("Votre message : %s\n",buff);
         printf ("Mauvais format du message, fermeture de la connection\n");
