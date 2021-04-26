@@ -200,7 +200,7 @@ void list (){
 
     signal(SIGPIPE, recuperateur_erreur);
     int descripteur = connection (machine, port);
-    send(descripteur,"LIST\r\n",7,0);
+    send(descripteur,"LIST\r\n",6,0);
 
     if(tout_se_passe_bien == 0){
         list_diffuseur(descripteur);
@@ -229,11 +229,11 @@ void mess (){
     int descripteur = connection (machine, port);
 
     //Créer les buffers
-    char * colis = malloc (sizeof(char) * (157));
+    char * colis = malloc (sizeof(char) * (156));
 
     //Envoie le message
     sprintf(colis,"MESS %s %s\r\n",pseudo,message);
-    int size = send(descripteur,colis,157,0);
+    int size = send(descripteur,colis,156,0);
     if (size < 0){
         printf("Il y a eu une erreur dans l'envoi du message!\n");
         close(descripteur);

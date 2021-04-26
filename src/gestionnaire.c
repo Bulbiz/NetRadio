@@ -154,7 +154,7 @@ void extension_mess (char * buff){
             address_sock.sin_addr.s_addr=htonl(INADDR_ANY);
 
             connect(descripteur, (struct sockaddr *) &address_sock, sizeof(struct sockaddr_in));
-            send(descripteur,buff,157,0);
+            send(descripteur,buff,156,0);
             close(descripteur);
         }
     }
@@ -274,6 +274,7 @@ void*communication(void *arg){
 
     //reception du message dans le buff
     int r = recv(descripteur,buff,(TAILLE_MAX_BUFFER)*sizeof(char),0);
+
     if (r <= 0){
         printf("Message vide, Fin de la connection ...\n");
     }
@@ -290,14 +291,14 @@ void*communication(void *arg){
         }
 
     //condition LIST
-    }else if ((strncmp(buff, "LIST", 4) == 0) && r == 4){
+    }else if ((strncmp(buff, "LIST\r\n", 6) == 0) && r == 6){
 
         printf("Condition LIST\n");
         envoieListe (descripteur, nbDiffuseur, envoieNumDiff, buffDiffuseur);
         printf("Fin d'envoie de LIST\n");
 
-    //condition MESS, le message doit être de taille 157
-    }else if ((strncmp(buff, "MESS", 4) == 0) && r == 157){
+    //condition MESS, le message doit être de taille 156
+    }else if ((strncmp(buff, "MESS", 4) == 0) && r == 156){
 
         printf("Condition MESS\n");
         send(descripteur, "ACKM\r\n", 6, 0);
