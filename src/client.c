@@ -112,13 +112,6 @@ void print_formatage_joli_item (char * item){
     buf[34] = '\0';
     buf[50] = '\0';
     buf[54] = '\0';    
-    /*printf("Base : %s\n",buf);
-    printf("Base1 : %s\n",buf + 5); //OK
-    printf("Base2 : %s\n",buf + 14); //OK
-    printf("Base3 : %s\n",buf + 30); //OK
-    printf("Base4 : %s\n",buf + 35); //OK
-    printf("Base5 : %s\n",buf + 51); //OK
-    printf("Base6 : %s\n",buf + 55); //OK*/
     printf("%s -> Multi(%s : %s) Ecoute(%s : %s)\n",buf + 5,buf + 14,buf + 30,buf + 35,buf + 51);
 }
 
@@ -143,7 +136,6 @@ void list_diffuseur (int descripteur){
         buf[55] = '\0';
         if (strncmp(buf,"ITEM",4) == 0){
             print_formatage_joli_item (buf);
-            //printf("Diffuseur : %s \n", buf + 5);
         }else{
             printf("Le message reçu est mauvais !\n Le message était %s\nFermeture de la connection ... \n",buf);
             close(descripteur);
