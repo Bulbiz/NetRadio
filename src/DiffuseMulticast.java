@@ -9,8 +9,10 @@ public class DiffuseMulticast implements Runnable{
     private LinkedList<String> diffuseMsg;
     private int portMulticast;
     private String adresseMulticast;
+
     //Obselète, le lien avec le diffuseur est inutile
-    private Diffuseur parent;
+    //private Diffuseur parent;
+    
     //Position du message actuellement diffusé dans la liste
     private int indice = 0;
     //Nombre total de messages diffusés jusqu'à présent
