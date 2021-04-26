@@ -48,6 +48,10 @@ public class DiffuseMulticast implements Runnable{
         this.indice = (this.indice + 1) % diffuseMsg.size();
     }
 
+    private String assembleDiff(){
+        return Diffuseur.DIFF + " " + Diffuseur.formatageEntier(msgEnvoye) + " " + this.diffuseMsg.get(indice);
+    }
+
     public void run(){
         try{
             DatagramSocket dso = new DatagramSocket();
@@ -58,7 +62,7 @@ public class DiffuseMulticast implements Runnable{
                 /*if (indice >= diffuseMsg.size()){
                     indice = 0;
                 }*/
-                data = (Diffuseur.DIFF + " " + Diffuseur.formatageEntier(msgEnvoye) + " " + this.diffuseMsg.get(indice)).getBytes();
+                data = assembleDiff().getBytes();
                 DatagramPacket msg = new DatagramPacket(data, data.length, ia);
                 dso.send(msg);
                 incrementeIndice();
