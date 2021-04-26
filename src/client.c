@@ -261,16 +261,37 @@ char * demande_nbmess (){
     printf("Vous demandez %s messages \n",buf);
     return buf;
 }
+void remove_diese (char * texte){
+    for (int i = 0; i < strlen(texte); i++){
+        if (texte[i] == '#'){
+            texte[i] = '\0';
+        }
+    }
+}
+void print_joli_message (char * message){
+    char buf [162];
+    memset(buf,'\0',162);
+    strcpy (buf,message);
+    buf[4] = '\0';
+    buf[9] = '\0';
+    buf[18] = '\0';
+    remove_diese(buf + 19);
+    printf("%s/%s : %s\n", buf+5,buf+10,buf+19);
+}
 
-void list_message (int descripteur){
+void list_message (int descripteur,int nbmess_to_int){
     printf("Veuillez patientez, nous recevons la liste des derniers messages...\n");
     char message_initial [162];
     memset(message_initial,'\0',162);
-    while(strncmp(message_initial,"ENDM",4) != 0){
+    int i = 0;
+    while(strncmp(message_initial,"ENDM",4) != 0 && i < nbmess_to_int){
+        i = i + 1;
         memset(message_initial,'\0',162);
         recv(descripteur,message_initial,161,0);
         message_initial[159] = '\0';
-        printf("J'ai reçu : %s\n" , message_initial);
+        if (strncmp(message_initial,"ENDM",4) != 0)
+            print_joli_message(message_initial);
+        //printf("J'ai reçu : %s\n" , message_initial);
     }
     printf("Fin de la reception des messages !\n");
     close(descripteur);
@@ -280,6 +301,7 @@ void last (){
     char * machine = demande_nom_machine();
     int port = demande_port();
     char * nbmess = demande_nbmess();
+    int nbmess_to_int = atoi(nbmess);
 
     signal(SIGPIPE, recuperateur_erreur);
     int descripteur = connection (machine, port);
@@ -290,7 +312,7 @@ void last (){
     send(descripteur,last_message,10,0);
 
     if(tout_se_passe_bien == 0){
-        list_message(descripteur);
+        list_message(descripteur,nbmess_to_int);
     }else{
         printf("Il y a eu une erreur de connection, désolé ...\n");
         tout_se_passe_bien = 0;
