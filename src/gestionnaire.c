@@ -48,7 +48,6 @@ int diffuseurPresent (){
 }
 
 void afficheListeDiffuseur (){
-    //pthread_mutex_lock(&verrou);
     char * tmpId = malloc (sizeof(char) * (ID + 1));
     char * tmpIp = malloc (sizeof(char) * (IP + 1));
     char * tmpPort = malloc (sizeof(char) * (PORT + 1));
@@ -81,7 +80,6 @@ void afficheListeDiffuseur (){
             printf("PORT2 : %s\n\n",tmpPort);
         }
     }
-    //pthread_mutex_unlock(&verrou);
     free (tmpId);
     free (tmpIp);
     free (tmpPort);
@@ -146,7 +144,6 @@ char * verifNombre (int x){
 void extension_mess (char * buff){
     for (int i = 0; i < MAX_DIFFUSEUR; i++){
         if (strcmp(list_diffuseur[i].id, "") != 0){
-            printf(buff);
             int p=atoi(list_diffuseur[i].port2);
             int descripteur = socket (PF_INET,SOCK_STREAM,0);
 
@@ -158,19 +155,6 @@ void extension_mess (char * buff){
             connect(descripteur, (struct sockaddr *) &address_sock, sizeof(struct sockaddr_in));
             send(descripteur,buff,157,0);
             close(descripteur);
-            /*int r=bind(sock,(struct sockaddr *)&address_sock,sizeof(struct sockaddr_in));
-
-            if(r==0){
-                r=listen(sock,0);
-                struct sockaddr_in caller;
-                socklen_t size=sizeof(caller);
-                int *sock2=(int *)malloc(sizeof(int));
-                *sock2=accept(sock,(struct sockaddr *)&caller,&size);
-                if(sock2>=0){
-                    send (*sock2,buff,161,0);
-                }
-                close(*sock2);
-            } */      
         }
     }
 }
