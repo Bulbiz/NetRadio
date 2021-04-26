@@ -40,9 +40,13 @@ class IMOKThread extends Thread{
                             pw.flush();
                             System.out.println("bbbbbbbbbbbbbbbb: " + msg);
                         }
+                        if (gestionnaire.isClosed()){
+                            break;
+                        }
                         msg = br.readLine();
                     }catch(Exception e){
                         e.printStackTrace();
+                        return;
                     }
                 }
             } else if(reponse.equals(Diffuseur.RENO)){

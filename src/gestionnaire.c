@@ -146,14 +146,20 @@ char * verifNombre (int x){
 void extension_mess (char * buff){
     for (int i = 0; i < MAX_DIFFUSEUR; i++){
         if (strcmp(list_diffuseur[i].id, "") != 0){
-
+            printf(buff);
             int p=atoi(list_diffuseur[i].port2);
-            int sock=socket(PF_INET,SOCK_STREAM,0);
+            int descripteur = socket (PF_INET,SOCK_STREAM,0);
+
             struct sockaddr_in address_sock;
             address_sock.sin_family=AF_INET;
             address_sock.sin_port=htons(p);
             address_sock.sin_addr.s_addr=htonl(INADDR_ANY);
-            int r=bind(sock,(struct sockaddr *)&address_sock,sizeof(struct sockaddr_in));
+
+            connect(descripteur, (struct sockaddr *) &address_sock, sizeof(struct sockaddr_in));
+            send(descripteur,buff,157,0);
+            close(descripteur);
+            /*int r=bind(sock,(struct sockaddr *)&address_sock,sizeof(struct sockaddr_in));
+
             if(r==0){
                 r=listen(sock,0);
                 struct sockaddr_in caller;
@@ -164,7 +170,7 @@ void extension_mess (char * buff){
                     send (*sock2,buff,161,0);
                 }
                 close(*sock2);
-            }        
+            } */      
         }
     }
 }
