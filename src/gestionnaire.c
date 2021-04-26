@@ -48,7 +48,7 @@ int diffuseurPresent (){
 }
 
 void afficheListeDiffuseur (){
-    pthread_mutex_lock(&verrou);
+    //pthread_mutex_lock(&verrou);
     char * tmpId = malloc (sizeof(char) * (ID + 1));
     char * tmpIp = malloc (sizeof(char) * (IP + 1));
     char * tmpPort = malloc (sizeof(char) * (PORT + 1));
@@ -81,7 +81,7 @@ void afficheListeDiffuseur (){
             printf("PORT2 : %s\n\n",tmpPort);
         }
     }
-    pthread_mutex_unlock(&verrou);
+    //pthread_mutex_unlock(&verrou);
     free (tmpId);
     free (tmpIp);
     free (tmpPort);
@@ -89,12 +89,12 @@ void afficheListeDiffuseur (){
 
 //ajoute le diffuseur et retour son positionnement dans la liste
 int ajoutDiffuseur (diffuseur d){
-    pthread_mutex_lock(&verrou);
     char * buff = malloc (sizeof(char) * ID);
     memset(buff,'\0', ID);
     for (int i = 0; i < MAX_DIFFUSEUR; i++){
         memcpy(buff, list_diffuseur[i].id, ID);
         if(strcmp(list_diffuseur[i].id, "") == 0){
+            pthread_mutex_lock(&verrou);
             free(list_diffuseur[i].id);
             free(list_diffuseur[i].ip1);
             free(list_diffuseur[i].ip2);
@@ -108,7 +108,6 @@ int ajoutDiffuseur (diffuseur d){
     }
     free (buff);
     printf("bug ajout diffuseur");
-    pthread_mutex_unlock(&verrou);
     return -1;
 }
 
@@ -145,7 +144,6 @@ char * verifNombre (int x){
 }
 
 void extension_mess (char * buff){
-    pthread_mutex_lock(&verrou);
     for (int i = 0; i < MAX_DIFFUSEUR; i++){
         if (strcmp(list_diffuseur[i].id, "") != 0){
 
@@ -169,7 +167,6 @@ void extension_mess (char * buff){
             }        
         }
     }
-    pthread_mutex_unlock(&verrou);
 }
 
 void ca_va(int descripteur,char * buff){
@@ -217,7 +214,7 @@ void ca_va(int descripteur,char * buff){
     while(1){
         memset(buff_cava, '\0', 7);
         send(descripteur, "RUOK\r\n", 6, 0);
-        sleep(30);
+        sleep(10);
         recv(descripteur,buff_cava, 6,0);
         printf("buff ca va : %s\n", buff_cava);
         

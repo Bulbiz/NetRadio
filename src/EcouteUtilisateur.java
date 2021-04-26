@@ -84,7 +84,7 @@ public class EcouteUtilisateur implements Runnable{
                 }
 
                 String [] traitement = traitementRequete(msg);
-
+                System.out.println("T :" + traitement[0]);
                 if (traitement[0].equals(Diffuseur.MESS) 
                     && traitement[1].length() <= Diffuseur.TAILLEID
                     && traitement[2].length() <= Diffuseur.TAILLEMAXMSG) {
@@ -98,7 +98,7 @@ public class EcouteUtilisateur implements Runnable{
                     break;
                 } else if (traitement[0].equals(Diffuseur.LAST)) {
                     receptionLast(pw, traitement);
-                } else if (traitement[0].equals(Diffuseur.RUOK)) {
+                } else if (traitement[0].equals(Diffuseur.RUOK + "\r\n")) {
                     pw.print(Diffuseur.IMOK + "\r\n");
                     pw.flush();
                 } else {
