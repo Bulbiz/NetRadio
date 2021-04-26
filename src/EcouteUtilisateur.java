@@ -32,7 +32,7 @@ public class EcouteUtilisateur implements Runnable{
             stock = new String[3];
             stock[0] = s.substring(0, 4);
             stock[1] = s.substring(5, 13);
-            stock[2] = s.substring(14, s.length()-2);
+            stock[2] = s.substring(14, s.length());
         } else {
             stock = new String[2];
             stock[0] = s.substring(0, 8);
@@ -94,7 +94,7 @@ public class EcouteUtilisateur implements Runnable{
                 if (traitement[0].equals(Diffuseur.MESS) 
                     && traitement[1].length() <= Diffuseur.TAILLEID
                     && traitement[2].length() <= Diffuseur.TAILLEMAXMSG) {
-                    liveStream.getListMsg().add(parent.assembleMsgDiff(traitement[1], traitement[2]));
+                    liveStream.ajoutMsg(parent.assembleMsgDiff(traitement[1], traitement[2]));
 
                     pw.print(Diffuseur.ACKM + "\r\n");
                     pw.flush();

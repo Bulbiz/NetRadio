@@ -133,7 +133,7 @@ public class Diffuseur{
     } 
 
     //Assemble un message qui sera ajouté dans la liste de message du diffuseur
-    private String assembleMsgDiff(String id, String message){
+    public String assembleMsgDiff(String id, String message){
         //Ce cas ne devrait jamais être atteint, est une sécurité
         if (message.length() > TAILLEMAXMSG || id.length() > TAILLEID){
             return "ERREUR## " + formatageString("ERREUR", TAILLEMAXMSG) + "\r\n";
