@@ -21,7 +21,7 @@ void flush_stdin()
         c = getchar();
     }
 }
-
+//Lecture de l'entrée standard en complétant avec des dièses
 char * lire_diese (int size){
     char * lecture = malloc (sizeof(char) * (size + 3));
     memset(lecture,'#',size);
@@ -40,12 +40,12 @@ char * lire_diese (int size){
 
     return lecture;
 }
-
+//Lecture de l'entrée standard avec une taille exacte
 char * lire (int size){
     char * lecture = malloc (sizeof(char) * (size + 3));
-    memset(lecture,'\0',size);
+    memset(lecture,'\0',size + 3);
     while(strlen(lecture) != size){
-        memset(lecture,'\0',size);
+        memset(lecture,'\0',size + 3);
         if (fgets(lecture,size + 1,stdin) == NULL)
             printf("Erreur sur la lecture au clavier !");
 
@@ -57,7 +57,7 @@ char * lire (int size){
     }
     return lecture;
 }
-
+//Lecture de l'entrée standard avec une taille variable
 char * lire_variable (int size){
     char * lecture = malloc (sizeof(char) * (size + 3));
     memset(lecture,'\0',size);
@@ -74,14 +74,24 @@ char * lire_variable (int size){
 
 /* Permet d'obtenir l'adresse IPV4 à partir d'un nom de machine */
 int conversionAdresse (char * machine_name,struct in_addr * buf){
+    //Precaution : Sert a éviter les mauvaise lectures de getaddrinfo.
+    char message_copy [1000];
+    memset(message_copy,'\0',1000);
+    strcpy(message_copy,machine_name);
+
     struct addrinfo *first_info;
     struct addrinfo hints;
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
 
-    int r = getaddrinfo(machine_name,NULL,&hints,&first_info);
-    struct sockaddr_in *addressin = (struct sockaddr_in *) first_info -> ai_addr;
-    *buf = (struct in_addr) (addressin->sin_addr);
+    int r = getaddrinfo(message_copy,NULL,&hints,&first_info);
+    if (r >= 0){
+        struct sockaddr_in *addressin = (struct sockaddr_in *) first_info -> ai_addr;
+        *buf = (struct in_addr) (addressin->sin_addr);
+    }else{
+        printf("Erreur : Impossible de trouver l'adresse\n");
+        tout_se_passe_bien = -1;
+    }
     return r;
 }
 
@@ -93,7 +103,7 @@ int connection (char * machine, int port){
 
     int r = conversionAdresse (machine, &socket_addr.sin_addr);
 
-    if (r != -1){
+    if (r >= 0){
         int descripteur = socket (PF_INET,SOCK_STREAM,0);
         connect(descripteur, (struct sockaddr *) &socket_addr, sizeof(struct sockaddr_in));
         return descripteur;
@@ -101,7 +111,21 @@ int connection (char * machine, int port){
         return -1;
     }
 }
+//Affichage d'un item de sorte que cela soit joli
+void print_formatage_joli_item (char * item){
+    char buf [58];
+    memset(buf,'\0',58);
+    strcpy(buf,item);
+    buf[4] = '\0';
+    buf[13] = '\0';
+    buf[29] = '\0';
+    buf[34] = '\0';
+    buf[50] = '\0';
+    buf[54] = '\0';    
+    printf("%s -> Multi(%s : %s) Ecoute(%s : %s)\n",buf + 5,buf + 14,buf + 30,buf + 35,buf + 51);
+}
 
+//Liste les diffuseurs pour la commande LIST
 void list_diffuseur (int descripteur){
     printf("Veuillez patientez, nous recevons la liste des diffuseurs ...\n");
     char message_initial [10];
@@ -121,11 +145,10 @@ void list_diffuseur (int descripteur){
         memset(buf,'\0',58);
         recv(descripteur,buf,57,0);
         buf[55] = '\0';
-        printf("J'ai reçu : %s" , buf);
         if (strncmp(buf,"ITEM",4) == 0){
-            printf("Diffuseur : %s \n", buf + 5);
+            print_formatage_joli_item (buf);
         }else{
-            printf("Le message reçu est mauvais ! Fermeture de la connection ... \n");
+            printf("Le message reçu est mauvais !\nLe message était %s\nFermeture de la connection ... \n",buf);
             close(descripteur);
             return;
         }
@@ -148,6 +171,7 @@ char * demande_nom_machine (){
     return machine;
 }
 
+//Vérifie que str est bien un nombre 
 int est_un_nombre (char * str){
     for (int i = 0; i < strlen(str) ; i ++)
         if(isdigit(str[i]) == 0)
@@ -187,7 +211,7 @@ void list (){
     }
 }
 
-/* Demande à l'utilisateur le nom de la machine */
+/* Demande à l'utilisateur le message à envoyer */
 char * demande_message (){
     printf("Quel est le message que vous voulez affichez ? [<= 140 caractères]\n");
     char  * message = lire_diese(140);
@@ -195,6 +219,7 @@ char * demande_message (){
     return message;
 }
 
+//Exécute la commande MESS
 void mess (){
     // Demande à l'utilisateur toute les informations utiles
     char * machine = demande_nom_machine ();
@@ -250,15 +275,39 @@ char * demande_nbmess (){
     return buf;
 }
 
-void list_message (int descripteur){
+// Enlève les # dans texte
+void remove_diese (char * texte){
+    for (int i = 0; i < strlen(texte); i++){
+        if (texte[i] == '#'){
+            texte[i] = '\0';
+        }
+    }
+}
+
+//Affiche un message joliement,peut être utiliser pour LAST et HEAR
+void print_joli_message (char * message){
+    char buf [162];
+    memset(buf,'\0',162);
+    strcpy (buf,message);
+    buf[4] = '\0';
+    buf[9] = '\0';
+    buf[18] = '\0';
+    remove_diese(buf + 19);
+    printf("%s/%s : %s\n", buf+5,buf+10,buf+19);
+}
+
+void list_message (int descripteur,int nbmess_to_int){
     printf("Veuillez patientez, nous recevons la liste des derniers messages...\n");
     char message_initial [162];
     memset(message_initial,'\0',162);
-    while(strncmp(message_initial,"ENDM",4) != 0){
+    int i = 0;
+    while(strncmp(message_initial,"ENDM",4) != 0 && i < nbmess_to_int){
+        i = i + 1;
         memset(message_initial,'\0',162);
         recv(descripteur,message_initial,161,0);
         message_initial[159] = '\0';
-        printf("J'ai reçu : %s\n" , message_initial);
+        if (strncmp(message_initial,"ENDM",4) != 0)
+            print_joli_message(message_initial);
     }
     printf("Fin de la reception des messages !\n");
     close(descripteur);
@@ -268,6 +317,7 @@ void last (){
     char * machine = demande_nom_machine();
     int port = demande_port();
     char * nbmess = demande_nbmess();
+    int nbmess_to_int = atoi(nbmess);
 
     signal(SIGPIPE, recuperateur_erreur);
     int descripteur = connection (machine, port);
@@ -278,7 +328,7 @@ void last (){
     send(descripteur,last_message,10,0);
 
     if(tout_se_passe_bien == 0){
-        list_message(descripteur);
+        list_message(descripteur,nbmess_to_int);
     }else{
         printf("Il y a eu une erreur de connection, désolé ...\n");
         tout_se_passe_bien = 0;
@@ -324,7 +374,7 @@ void listen_to_infinity (int descripteur){
     while(1){
         memset(buf,'\0',162);
         recv(descripteur,buf,161,0);
-        printf("Message recu :%s\n",buf);
+        print_joli_message(buf);
     }
 }
 
@@ -361,11 +411,52 @@ void hear (){
     }
 }
 
+/* Demande à l'utilisateur le port de la machine */
+int demande_taille_mess (){
+    printf("Attention, vous devez indiquer la taille EXACTE que vous voulez envoyer !\n");
+    int port = 0;
+    while(port == 0){
+        printf("Quelle taille voulez vous envoyer ? [< 9999]\n");
+        char * buf = lire_variable(4);
+        if(est_un_nombre(buf) == 0)
+            port = atoi(buf);
+    }
+    printf("La taille du message est donc de %d\n",port);
+    return port;
+}
+
+/* Demande à l'utilisateur le message à envoyer */
+char * demande_persomessage (int taille){
+    printf("Quel est le message que vous voulez affichez ? [Exactement %d caractères]\n",taille);
+    char  * message = lire(taille);
+    printf("Le message à envoyer est %s!\nIl est bien de taille : %ld\n",message,strlen(message));
+    return message;
+}
+
+void stcp (){
+    char * machine = demande_nom_machine();
+    int port = demande_port();
+    int taille_mess = demande_taille_mess();
+    char * message = demande_persomessage(taille_mess);
+
+    signal(SIGPIPE, recuperateur_erreur);
+    int descripteur = connection (machine, port);
+
+    if(tout_se_passe_bien == 0){
+        send (descripteur,message,taille_mess,0);
+    }else{
+        printf("Il y a eu une erreur de connection, désolé ...\n");
+        tout_se_passe_bien = 0;
+        close(descripteur);
+    }
+}
+
 void help (){
     printf("LIST -> Demande à un gestionnaire de diffuseur la liste de ces diffuseurs\n");
     printf("MESS -> Envoie un message à un diffuseur pour qu'il puisse le retransmettre\n");
     printf("LAST -> Demande à un diffuseur la liste de ces derniers messages\n");
     printf("HEAR -> Ecoute dans un port de multidiffusion\n");
+    printf("STCP -> Send un message personalisé en TCP \n");
     printf("HELP -> Affiche l'aide pour l'utilisateur\n");
     printf("EXIT -> Termine le programme\n");
 }
@@ -373,7 +464,7 @@ void help (){
 /* Demande ce que veut faire l'utilisateur */
 void choix_du_service (){
     while (1){
-        printf("Que voulez vous faire entre [LIST], [MESS], [LAST], [HEAR], [HELP], [EXIT] ?\n");
+        printf("Que voulez vous faire entre [LIST], [MESS], [LAST], [HEAR], [STCP], [HELP], [EXIT] ?\n");
         char * commande = lire(4);
 
         if (strcmp(commande,"LIST") == 0){
@@ -387,6 +478,9 @@ void choix_du_service (){
         }
         else if (strcmp(commande,"HEAR") == 0){
             hear ();
+        }
+        else if (strcmp(commande,"STCP") == 0){
+            stcp ();
         }
         else if (strcmp(commande,"HELP") == 0){
             help ();
