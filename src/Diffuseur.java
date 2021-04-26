@@ -116,10 +116,6 @@ public class Diffuseur{
         } catch(Exception e) {
             System.out.println("Erreur durant l'enregistrement auprès du gestionnaire");
             return false;
-        } finally {
-            gestio.close();
-            br.close();
-            pw.close();
         }
     }
 
