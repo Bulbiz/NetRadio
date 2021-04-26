@@ -102,6 +102,26 @@ int connection (char * machine, int port){
     }
 }
 
+void print_formatage_joli_item (char * item){
+    char buf [58];
+    memset(buf,'\0',58);
+    strcpy(buf,item);
+    buf[4] = '\0';
+    buf[13] = '\0';
+    buf[29] = '\0';
+    buf[34] = '\0';
+    buf[50] = '\0';
+    buf[54] = '\0';    
+    /*printf("Base : %s\n",buf);
+    printf("Base1 : %s\n",buf + 5); //OK
+    printf("Base2 : %s\n",buf + 14); //OK
+    printf("Base3 : %s\n",buf + 30); //OK
+    printf("Base4 : %s\n",buf + 35); //OK
+    printf("Base5 : %s\n",buf + 51); //OK
+    printf("Base6 : %s\n",buf + 55); //OK*/
+    printf("%s -> Multi(%s : %s) Ecoute(%s : %s)\n",buf + 5,buf + 14,buf + 30,buf + 35,buf + 51);
+}
+
 void list_diffuseur (int descripteur){
     printf("Veuillez patientez, nous recevons la liste des diffuseurs ...\n");
     char message_initial [10];
@@ -121,11 +141,11 @@ void list_diffuseur (int descripteur){
         memset(buf,'\0',58);
         recv(descripteur,buf,57,0);
         buf[55] = '\0';
-        printf("J'ai reçu : %s" , buf);
         if (strncmp(buf,"ITEM",4) == 0){
-            printf("Diffuseur : %s \n", buf + 5);
+            print_formatage_joli_item (buf);
+            //printf("Diffuseur : %s \n", buf + 5);
         }else{
-            printf("Le message reçu est mauvais ! Fermeture de la connection ... \n");
+            printf("Le message reçu est mauvais !\n Le message était %s\nFermeture de la connection ... \n",buf);
             close(descripteur);
             return;
         }
