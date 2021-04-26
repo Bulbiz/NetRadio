@@ -37,7 +37,7 @@ public class DiffuseMulticast implements Runnable{
      * 9 = format du nombre (ex: 0002) + \r\n + 3 espaces
      */
     public synchronized void ajoutMsg(String s){
-        if(s.length() <= Diffuseur.TAILLEMAXMSG + Diffuseur.TAILLEID + 9){
+        if(s.length() <= Diffuseur.TAILLEMAXMSG + Diffuseur.TAILLEID + 9 && this.diffuseMsg.size() < 10000){
             this.diffuseMsg.add(s);
         } else {
             System.out.println("Erreur ajout msg");
