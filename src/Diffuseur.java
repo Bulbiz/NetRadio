@@ -3,6 +3,64 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+class IMOKThread extends Thread{
+    private Socket gestionnaire;
+    private BufferedReader br;
+    private PrintWriter pw;
+    private String mess;
+
+    public IMOKThread (Socket s,String enregistrement_mess){
+        this.mess = enregistrement_mess;
+        this.gestionnaire = s;
+        try{
+            this.br = new BufferedReader(new InputStreamReader(this.gestionnaire.getInputStream()));
+            this.pw = new PrintWriter(new OutputStreamWriter(this.gestionnaire.getOutputStream()));
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public void run (){
+        try{
+            pw.print(this.mess);
+            pw.flush();
+
+            String reponse = br.readLine();
+            String msg = br.readLine();
+            if(reponse.equals(Diffuseur.REOK)){
+                while (true){
+                    try{
+                        System.out.println("MSG : " + msg);
+                        if (msg == null){
+                            return;
+                        }
+                        if (msg.equals(Diffuseur.RUOK)){
+                            System.out.println("aaaaaaaaaaaaaa: " + msg);
+                            pw.print(Diffuseur.IMOK + "\r\n");
+                            pw.flush();
+                            System.out.println("bbbbbbbbbbbbbbbb: " + msg);
+                        }
+                        if (gestionnaire.isClosed()){
+                            break;
+                        }
+                        msg = br.readLine();
+                    }catch(Exception e){
+                        e.printStackTrace();
+                        return;
+                    }
+                }
+            } else if(reponse.equals(Diffuseur.RENO)){
+                System.out.println("Erreur post enregistrement avec le gestionnaire");
+            } else {
+                System.out.println("Erreur mauvais format");
+            }
+        } catch(Exception e) {
+            System.out.println("Erreur durant l'enregistrement auprès du gestionnaire");
+        }
+    }
+}
+
+
 public class Diffuseur{
     private String identifiant;
     private int portMsg;
@@ -95,7 +153,17 @@ public class Diffuseur{
     }
 
     public boolean enregistrementGestionnaire(int portGestionnaire, String adressGestionnaire, String adressDiff){
-        try{
+        try{    
+            Socket gestio = new Socket(adressGestionnaire, portGestionnaire);
+            String mess = assembleMsgEnregistrement(adressDiff);
+            IMOKThread t = new IMOKThread(gestio,mess);
+            t.start();
+            return true;
+        }catch(Exception e){
+            return false;
+        }
+        
+        /*try{
             Socket gestio = new Socket(adressGestionnaire, portGestionnaire);
             BufferedReader br = new BufferedReader(new InputStreamReader(gestio.getInputStream()));
             PrintWriter pw = new PrintWriter(new OutputStreamWriter(gestio.getOutputStream()));
@@ -105,6 +173,8 @@ public class Diffuseur{
             String reponse = br.readLine();
 
             if(reponse.equals(REOK)){
+                IMOKThread t = new IMOKThread(gestio);
+                t.start();
                 return true;
             } else if(reponse.equals(RENO)){
                 System.out.println("Erreur post enregistrement avec le gestionnaire");
@@ -116,7 +186,7 @@ public class Diffuseur{
         } catch(Exception e) {
             System.out.println("Erreur durant l'enregistrement auprès du gestionnaire");
             return false;
-        }
+        }*/
     }
 
     public void addToList(String msg){
@@ -143,7 +213,7 @@ public class Diffuseur{
      * [5] : adresse gestionnaire
      * [6] : adresse de la machine où le diffuseur est présent
      * 
-     * Ex : java src/Diffuseur joker123 5151 5252 225.10.20.30 4242
+     * Ex : java src/Diffuseur joker123 5151 5252 225.010.020.030 4242 127.000.000.001 127.000.000.001
      */
     public static void main(String [] args){
         //TODO : rendre args[5,6] obligatoire
