@@ -22,7 +22,7 @@ public class EcouteUtilisateur implements Runnable{
     }
 
     //Traite correctement l'envoi de l'utilisateur selon la requête (peut être amélioré en cherchant des ' ' selon un nombre défini)
-    public String[] traitementRequete(String s){
+    private String[] traitementRequete(String s){
         String [] stock;
         if(s.substring(0, 4).equals(Diffuseur.LAST)){
             stock = new String[2];
@@ -43,7 +43,7 @@ public class EcouteUtilisateur implements Runnable{
     }
 
     //Méthode pour traiter le cas de la demande de messages avec LAST
-    public void receptionLast(PrintWriter pw, String [] traitement){
+    private void receptionLast(PrintWriter pw, String [] traitement){
         try{
             int nbMsg = Integer.valueOf(traitement[1]);
             //Récupération de la pos du message actuel et du nombre total de message envoyés

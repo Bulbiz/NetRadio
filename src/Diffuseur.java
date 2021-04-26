@@ -133,7 +133,7 @@ public class Diffuseur{
     } 
 
     //Assemble un message qui sera ajouté dans la liste de message du diffuseur
-    public String assembleMsgDiff(String id, String message){
+    private String assembleMsgDiff(String id, String message){
         //Ce cas ne devrait jamais être atteint, est une sécurité
         if (message.length() > TAILLEMAXMSG || id.length() > TAILLEID){
             return "ERREUR## " + formatageString("ERREUR", TAILLEMAXMSG) + "\r\n";
@@ -143,12 +143,12 @@ public class Diffuseur{
     }
 
     //Assemble un message d'enregistrement auprès du gestionnaire
-    public String assembleMsgEnregistrement(String ip2){
+    private String assembleMsgEnregistrement(String ip2){
         return REGI + " " + identifiant + " " + multiDiff + " " + portMultiDiff + " " + ip2 + " " + portMsg + "\r\n";
     }
 
     //Démarre un thread pour s'enregistrer auprès du gestionnaire et se maintenir en vie
-    public boolean enregistrementGestionnaire(int portGestionnaire, String adressGestionnaire, String adressDiff){
+    private boolean enregistrementGestionnaire(int portGestionnaire, String adressGestionnaire, String adressDiff){
         try{    
             Socket gestio = new Socket(adressGestionnaire, portGestionnaire);
             String mess = assembleMsgEnregistrement(adressDiff);
@@ -227,7 +227,7 @@ public class Diffuseur{
         EcouteUtilisateur eu = null;
         boolean test = d.enregistrementGestionnaire(stringToInt(args[4]), args[5], args[6]);
         System.out.println("Enregistrement : " + test);
-        dm.setDiffuseur(d);
+        //dm.setDiffuseur(d);
 
         //Initialisation de la liste de message (codé en dur peut être amélioré)
         dm.ajoutMsg(d.assembleMsgDiff(args[0], "The apocalypse shall soon be realised..."));

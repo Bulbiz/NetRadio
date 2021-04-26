@@ -24,9 +24,9 @@ public class DiffuseMulticast implements Runnable{
         this.adresseMulticast = adresse;
     }
 
-    public void setDiffuseur(Diffuseur d){
+    /*public void setDiffuseur(Diffuseur d){
         this.parent = d;
-    }
+    }*/
 
     public LinkedList<String> getListMsg(){
         return this.diffuseMsg;
@@ -36,7 +36,7 @@ public class DiffuseMulticast implements Runnable{
      * Ajoute un message dans la liste s'il est de la bonne taille (tous paramètres inclus)
      * 9 = format du nombre (ex: 0002) + \r\n + 3 espaces
      */
-    public void ajoutMsg(String s){
+    public synchronized void ajoutMsg(String s){
         if(s.length() <= Diffuseur.TAILLEMAXMSG + Diffuseur.TAILLEID + Diffuseur.DIFF.length() + 9){
             this.diffuseMsg.add(s);
         } else {
