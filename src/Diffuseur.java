@@ -214,6 +214,7 @@ public class Diffuseur{
      * [6] : adresse de la machine où le diffuseur est présent
      * 
      * Ex : java src/Diffuseur joker123 5151 5252 225.010.020.030 4242 127.000.000.001 127.000.000.001
+     * Ex : java src/Diffuseur aledaus 5151 5253 225.010.020.030 4242 127.000.000.001 127.000.000.001
      */
     public static void main(String [] args){
         //TODO : rendre args[5,6] obligatoire
