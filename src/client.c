@@ -148,7 +148,7 @@ void list_diffuseur (int descripteur){
         if (strncmp(buf,"ITEM",4) == 0){
             print_formatage_joli_item (buf);
         }else{
-            printf("Le message reçu est mauvais !\n Le message était %s\nFermeture de la connection ... \n",buf);
+            printf("Le message reçu est mauvais !\nLe message était %s\nFermeture de la connection ... \n",buf);
             close(descripteur);
             return;
         }
