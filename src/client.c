@@ -74,14 +74,24 @@ char * lire_variable (int size){
 
 /* Permet d'obtenir l'adresse IPV4 à partir d'un nom de machine */
 int conversionAdresse (char * machine_name,struct in_addr * buf){
+    //Precaution : Sert a éviter les mauvaise lectures de getaddrinfo.
+    char message_copy [1000];
+    memset(message_copy,'\0',1000);
+    strcpy(message_copy,machine_name);
+
     struct addrinfo *first_info;
     struct addrinfo hints;
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
 
-    int r = getaddrinfo(machine_name,NULL,&hints,&first_info);
-    struct sockaddr_in *addressin = (struct sockaddr_in *) first_info -> ai_addr;
-    *buf = (struct in_addr) (addressin->sin_addr);
+    int r = getaddrinfo(message_copy,NULL,&hints,&first_info);
+    if (r >= 0){
+        struct sockaddr_in *addressin = (struct sockaddr_in *) first_info -> ai_addr;
+        *buf = (struct in_addr) (addressin->sin_addr);
+    }else{
+        printf("Erreur : Impossible de trouver l'adresse\n");
+        tout_se_passe_bien = -1;
+    }
     return r;
 }
 
@@ -93,7 +103,7 @@ int connection (char * machine, int port){
 
     int r = conversionAdresse (machine, &socket_addr.sin_addr);
 
-    if (r != -1){
+    if (r >= 0){
         int descripteur = socket (PF_INET,SOCK_STREAM,0);
         connect(descripteur, (struct sockaddr *) &socket_addr, sizeof(struct sockaddr_in));
         return descripteur;
@@ -403,6 +413,7 @@ void hear (){
 
 /* Demande à l'utilisateur le port de la machine */
 int demande_taille_mess (){
+    printf("Attention, vous devez indiquer la taille EXACTE que vous voulez envoyer !\n");
     int port = 0;
     while(port == 0){
         printf("Quelle taille voulez vous envoyer ? [< 9999]\n");
@@ -422,7 +433,7 @@ char * demande_persomessage (int taille){
     return message;
 }
 
-void ptcp (){
+void stcp (){
     char * machine = demande_nom_machine();
     int port = demande_port();
     int taille_mess = demande_taille_mess();
@@ -445,7 +456,7 @@ void help (){
     printf("MESS -> Envoie un message à un diffuseur pour qu'il puisse le retransmettre\n");
     printf("LAST -> Demande à un diffuseur la liste de ces derniers messages\n");
     printf("HEAR -> Ecoute dans un port de multidiffusion\n");
-    printf("PTCP -> Envoie un message personalisé en TCP \n");
+    printf("STCP -> Send un message personalisé en TCP \n");
     printf("HELP -> Affiche l'aide pour l'utilisateur\n");
     printf("EXIT -> Termine le programme\n");
 }
@@ -453,7 +464,7 @@ void help (){
 /* Demande ce que veut faire l'utilisateur */
 void choix_du_service (){
     while (1){
-        printf("Que voulez vous faire entre [LIST], [MESS], [LAST], [HEAR], [PTCP], [HELP], [EXIT] ?\n");
+        printf("Que voulez vous faire entre [LIST], [MESS], [LAST], [HEAR], [STCP], [HELP], [EXIT] ?\n");
         char * commande = lire(4);
 
         if (strcmp(commande,"LIST") == 0){
@@ -468,8 +479,8 @@ void choix_du_service (){
         else if (strcmp(commande,"HEAR") == 0){
             hear ();
         }
-        else if (strcmp(commande,"PTCP") == 0){
-            ptcp ();
+        else if (strcmp(commande,"STCP") == 0){
+            stcp ();
         }
         else if (strcmp(commande,"HELP") == 0){
             help ();
