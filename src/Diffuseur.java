@@ -158,30 +158,6 @@ public class Diffuseur{
         } catch(Exception e) {
             return false;
         }
-        /*try{
-            Socket gestio = new Socket(adressGestionnaire, portGestionnaire);
-            BufferedReader br = new BufferedReader(new InputStreamReader(gestio.getInputStream()));
-            PrintWriter pw = new PrintWriter(new OutputStreamWriter(gestio.getOutputStream()));
-            pw.print(assembleMsgEnregistrement(adressDiff));
-            pw.flush();
-
-            String reponse = br.readLine();
-
-            if(reponse.equals(REOK)){
-                IMOKThread t = new IMOKThread(gestio);
-                t.start();
-                return true;
-            } else if(reponse.equals(RENO)){
-                System.out.println("Erreur post enregistrement avec le gestionnaire");
-                return false;
-            } else {
-                System.out.println("Erreur mauvais format");
-                return false;
-            }
-        } catch(Exception e) {
-            System.out.println("Erreur durant l'enregistrement auprès du gestionnaire");
-            return false;
-        }*/
     }
 
     /*Obselète, le Diffuseur n'utilise pas sa liste de message 
@@ -220,13 +196,18 @@ public class Diffuseur{
             System.exit(1);
         }
 
+        //Initialisation des variables
         LinkedList<String> msgDiff = new LinkedList<String>();
 
         DiffuseMulticast dm = new DiffuseMulticast(msgDiff, stringToInt(args[1]), args[3]);
         Diffuseur d = new Diffuseur(args[0], stringToInt(args[2]), stringToInt(args[1]), args[3]);
         EcouteUtilisateur eu = null;
+
+        //Phase d'enregistrement
         boolean test = d.enregistrementGestionnaire(stringToInt(args[4]), args[5], args[6]);
-        System.out.println("Enregistrement : " + test);
+        if(!test){
+            System.out.println("Enregistrement avec le gestionnaire échoué");
+        }
         //dm.setDiffuseur(d);
 
         //Initialisation de la liste de message (codé en dur peut être amélioré)
@@ -247,6 +228,7 @@ public class Diffuseur{
         dm.ajoutMsg(d.assembleMsgDiff(args[0], "Have I been surpassed...?!"));
         dm.ajoutMsg(d.assembleMsgDiff(args[0], "So I have erred in my calculations..."));
         
+        //Début des threads
         try{
             ServerSocket server = new ServerSocket(stringToInt(args[2]));
             Thread stream = new Thread(dm);
