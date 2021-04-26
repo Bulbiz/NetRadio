@@ -15,6 +15,7 @@
 #define PORT 4
 #define IP 15
 #define TAILLE_MSG 57       // 9 (REGI + 5 espaces) + ID + 2*IP + 2*PORT + 2(\r\n)
+#define TAILLE_MAX_BUFFER 160
 
 pthread_mutex_t verrou = PTHREAD_MUTEX_INITIALIZER;
 
@@ -48,7 +49,6 @@ int diffuseurPresent (){
 }
 
 void afficheListeDiffuseur (){
-    //pthread_mutex_lock(&verrou);
     char * tmpId = malloc (sizeof(char) * (ID + 1));
     char * tmpIp = malloc (sizeof(char) * (IP + 1));
     char * tmpPort = malloc (sizeof(char) * (PORT + 1));
@@ -81,7 +81,6 @@ void afficheListeDiffuseur (){
             printf("PORT2 : %s\n\n",tmpPort);
         }
     }
-    //pthread_mutex_unlock(&verrou);
     free (tmpId);
     free (tmpIp);
     free (tmpPort);
@@ -146,7 +145,6 @@ char * verifNombre (int x){
 void extension_mess (char * buff){
     for (int i = 0; i < MAX_DIFFUSEUR; i++){
         if (strcmp(list_diffuseur[i].id, "") != 0){
-            printf(buff);
             int p=atoi(list_diffuseur[i].port2);
             int descripteur = socket (PF_INET,SOCK_STREAM,0);
 
@@ -158,19 +156,6 @@ void extension_mess (char * buff){
             connect(descripteur, (struct sockaddr *) &address_sock, sizeof(struct sockaddr_in));
             send(descripteur,buff,157,0);
             close(descripteur);
-            /*int r=bind(sock,(struct sockaddr *)&address_sock,sizeof(struct sockaddr_in));
-
-            if(r==0){
-                r=listen(sock,0);
-                struct sockaddr_in caller;
-                socklen_t size=sizeof(caller);
-                int *sock2=(int *)malloc(sizeof(int));
-                *sock2=accept(sock,(struct sockaddr *)&caller,&size);
-                if(sock2>=0){
-                    send (*sock2,buff,161,0);
-                }
-                close(*sock2);
-            } */      
         }
     }
 }
@@ -236,7 +221,7 @@ void ca_va(int descripteur,char * buff){
     free(buff_cava);
 }
 
-void envoieListe (int descripteur, char * buff, int nbDiffuseur, char * envoieNumDiff, char * buffDiffuseur){
+void envoieListe (int descripteur, int nbDiffuseur, char * envoieNumDiff, char * buffDiffuseur){
     nbDiffuseur = diffuseurPresent();
     printf("nbdiffuseur présent : %d\n",nbDiffuseur);
     sprintf(envoieNumDiff,"LINB %s",verifNombre(nbDiffuseur));
@@ -273,9 +258,9 @@ void*communication(void *arg){
     struct client * utilisateur = (struct client *)arg;
     int descripteur = utilisateur -> descripteur;
 
-    //buff pour le message + 1 au cas où
-    char * buff = malloc (sizeof(char) * TAILLE_MSG + 1);
-    memset(buff,'\0',TAILLE_MSG + 1);
+    //buff pour la reception des commandes de taille 160 pour être large
+    char * buff = malloc (sizeof(char) * TAILLE_MAX_BUFFER);
+    memset(buff,'\0', TAILLE_MAX_BUFFER);
 
     int nbDiffuseur = 0;
 
@@ -288,13 +273,13 @@ void*communication(void *arg){
     memset(envoieNumDiff,'\0', 8);
 
     //reception du message dans le buff
-    int r = recv(descripteur,buff,(TAILLE_MSG)*sizeof(char),0);
+    int r = recv(descripteur,buff,(TAILLE_MAX_BUFFER)*sizeof(char),0);
     if (r <= 0){
         printf("Message vide, Fin de la connection ...\n");
     }
 
     //condition REGI
-    if(strncmp(buff, "REGI ", 5) == 0){
+    if((strncmp(buff, "REGI ", 5) == 0) && r == TAILLE_MSG){
 
         printf("Condition REGI\n");
         if(diffuseurPresent() < 50){
@@ -305,14 +290,14 @@ void*communication(void *arg){
         }
 
     //condition LIST
-    }else if (strncmp(buff, "LIST", 4) == 0){
+    }else if ((strncmp(buff, "LIST", 4) == 0) && r == 4){
 
         printf("Condition LIST\n");
-        envoieListe (descripteur, buff, nbDiffuseur, envoieNumDiff, buffDiffuseur);
+        envoieListe (descripteur, nbDiffuseur, envoieNumDiff, buffDiffuseur);
         printf("Fin d'envoie de LIST\n");
 
-    //condition MESS
-    }else if (strncmp(buff, "MESS", 4) == 0){
+    //condition MESS, le message doit être de taille 157
+    }else if ((strncmp(buff, "MESS", 4) == 0) && r == 157){
 
         printf("Condition MESS\n");
         send(descripteur, "ACKM\r\n", 6, 0);
