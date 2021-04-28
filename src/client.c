@@ -162,13 +162,53 @@ void recuperateur_erreur (int signo){
         tout_se_passe_bien = -1;
     }
 }
+int demande_nom_machine_ou_ip (){
+    printf("L'adresse est t-il un nom de machine ou bien une adresse ip ? Tapez [aip/nom]\n");
+    char * confirmation = lire(3);
+    while (strcmp(confirmation,"aip") != 0 && strcmp(confirmation,"nom")){
+        printf("Tapez [aip/nom]");
+        confirmation = lire(3);
+    }
+    if (strcmp(confirmation,"aip") == 0){
+        return 1;
+    }else{
+        return -1;
+    }
+}
 
+char * ip_traitement(char * ip){
+    char * ip_copy = (char *) malloc (sizeof(char) * 16);
+    memset(ip_copy,'\0',16);
+    int droite = 1; 
+    int avancement = 0;
+    for (int i = 0; i< strlen(ip);i++){
+        if (ip[i] == '.'){
+            droite = 1;
+            ip_copy[avancement] = '.';
+            avancement ++;
+        }else if (ip[i] != '0' || droite == -1){
+            droite = -1;
+            ip_copy[avancement] = ip[i];
+            avancement ++;
+        }
+    }
+    return ip_copy;
+}
 /* Demande à l'utilisateur le nom de la machine */
 char * demande_nom_machine (){
-    printf("Sur quelle machine se connecter ? [<500 caractères]\n");
-    char * machine = lire_variable(500);
-    printf("La machine se trouve à %s!\n",machine);
-    return machine;
+    if (demande_nom_machine_ou_ip () > 0){
+        printf("Sur quelle addresse ip se connecter ? [Exactement 15 caractères]\n");
+        char * ip = lire(15);
+        printf("L'addresse indiquer est %s!\n",ip);
+        ip = ip_traitement (ip);
+        printf("Après traitement, l'addresse est %s!\n",ip);
+        return ip;
+    }else{
+        printf("Sur quelle machine se connecter ? [<500 caractères]\n");
+        char * machine = lire_variable(500);
+        printf("La machine se trouve à %s!\n",machine);
+        return machine;
+    }
 }
 
 //Vérifie que str est bien un nombre 
