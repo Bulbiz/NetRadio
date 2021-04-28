@@ -491,42 +491,13 @@ int demande_taille_mess (){
     return port;
 }
 
-/* Demande à l'utilisateur le message à envoyer */
-char * demande_persomessage (int taille){
-    printf("Quel est le message que vous voulez affichez ? [Exactement %d caractères]\n",taille);
-    char  * message = lire(taille);
-    printf("Le message à envoyer est %s!\nIl est bien de taille : %ld\n",message,strlen(message));
-    return message;
-}
 
-void stcp (){
-    char * machine = demande_nom_machine();
-    int port = demande_port();
-    int taille_mess = demande_taille_mess();
-    char * message = demande_persomessage(taille_mess);
-
-    signal(SIGPIPE, recuperateur_erreur);
-    int descripteur = connection (machine, port);
-
-    if(tout_se_passe_bien == 0){
-        if (send (descripteur,message,taille_mess,0) < 0){
-            printf("Il y a eu une erreur lors du send, désolé...\n");
-            tout_se_passe_bien = 0;
-            close(descripteur);
-        }
-    }else{
-        printf("Il y a eu une erreur de connection, désolé ...\n");
-        tout_se_passe_bien = 0;
-        close(descripteur);
-    }
-}
 
 void help (){
     printf("LIST -> Demande à un gestionnaire de diffuseur la liste de ces diffuseurs\n");
     printf("MESS -> Envoie un message à un diffuseur pour qu'il puisse le retransmettre\n");
     printf("LAST -> Demande à un diffuseur la liste de ces derniers messages\n");
     printf("HEAR -> Ecoute dans un port de multidiffusion\n");
-    printf("STCP -> Send un message personalisé en TCP \n");
     printf("HELP -> Affiche l'aide pour l'utilisateur\n");
     printf("EXIT -> Termine le programme\n");
 }
@@ -548,9 +519,6 @@ void choix_du_service (){
         }
         else if (strcmp(commande,"HEAR") == 0){
             hear ();
-        }
-        else if (strcmp(commande,"STCP") == 0){
-            stcp ();
         }
         else if (strcmp(commande,"HELP") == 0){
             help ();
