@@ -130,7 +130,11 @@ void list_diffuseur (int descripteur){
     printf("Veuillez patientez, nous recevons la liste des diffuseurs ...\n");
     char message_initial [10];
     memset(message_initial,'\0',10);
-    recv(descripteur,message_initial,9,0);
+    if (recv(descripteur,message_initial,9,0) < 0){
+        printf("Il y a eu une erreur lors de la réception du message \nFermeture de la connection ... \n");
+        close(descripteur);
+        return;
+    }
     message_initial[7] = '\0';
 
     if (strncmp(message_initial,"LINB",4) != 0){
@@ -143,7 +147,11 @@ void list_diffuseur (int descripteur){
     char buf [58];
     for (int i = 0; i < nombre_de_message ; i ++ ){
         memset(buf,'\0',58);
-        recv(descripteur,buf,57,0);
+        if(recv(descripteur,buf,57,0) < 0){
+            printf("Il y a eu une erreur lors de la réception du message \nFermeture de la connection ... \n");
+            close(descripteur);
+            return;
+        }
         buf[55] = '\0';
         if (strncmp(buf,"ITEM",4) == 0){
             print_formatage_joli_item (buf);
@@ -240,7 +248,9 @@ void list (){
 
     signal(SIGPIPE, recuperateur_erreur);
     int descripteur = connection (machine, port);
-    send(descripteur,"LIST\r\n",6,0);
+    if (send(descripteur,"LIST\r\n",6,0) < 0){
+        tout_se_passe_bien = -1;
+    }
 
     if(tout_se_passe_bien == 0){
         list_diffuseur(descripteur);
@@ -344,7 +354,11 @@ void list_message (int descripteur,int nbmess_to_int){
     while(strncmp(message_initial,"ENDM",4) != 0 && i < nbmess_to_int){
         i = i + 1;
         memset(message_initial,'\0',162);
-        recv(descripteur,message_initial,161,0);
+        if (recv(descripteur,message_initial,161,0) < 0){
+            printf("Il y a eu une erreur lors de la réception du message \nFermeture de la connection ... \n");
+            close(descripteur);
+            return;
+        }        
         message_initial[159] = '\0';
         if (strncmp(message_initial,"ENDM",4) != 0)
             print_joli_message(message_initial);
@@ -365,7 +379,9 @@ void last (){
     char * last_message = malloc(sizeof(char) * (10));
     sprintf(last_message,"LAST %s\r\n",nbmess);
 
-    send(descripteur,last_message,10,0);
+    if (send(descripteur,last_message,10,0) < 0){
+        tout_se_passe_bien = -1;
+    }
 
     if(tout_se_passe_bien == 0){
         list_message(descripteur,nbmess_to_int);
@@ -413,7 +429,11 @@ void listen_to_infinity (int descripteur){
     char buf [162];
     while(1){
         memset(buf,'\0',162);
-        recv(descripteur,buf,161,0);
+        if (recv(descripteur,buf,161,0) < 0){
+            printf("Il y a eu une erreur lors de la réception du message \nFermeture de la connection ... \n");
+            close(descripteur);
+            return;
+        }
         print_joli_message(buf);
     }
 }
@@ -483,7 +503,11 @@ void stcp (){
     int descripteur = connection (machine, port);
 
     if(tout_se_passe_bien == 0){
-        send (descripteur,message,taille_mess,0);
+        if (send (descripteur,message,taille_mess,0) < 0){
+            printf("Il y a eu une erreur lors du send, désolé...\n");
+            tout_se_passe_bien = 0;
+            close(descripteur);
+        }
     }else{
         printf("Il y a eu une erreur de connection, désolé ...\n");
         tout_se_passe_bien = 0;
