@@ -121,7 +121,7 @@ void print_formatage_joli_item (char * item){
     buf[29] = '\0';
     buf[34] = '\0';
     buf[50] = '\0';
-    buf[54] = '\0';    
+    buf[55] = '\0';    
     printf("%s -> Multi(%s : %s) Ecoute(%s : %s)\n",buf + 5,buf + 14,buf + 30,buf + 35,buf + 51);
 }
 
