@@ -170,6 +170,7 @@ void recuperateur_erreur (int signo){
         tout_se_passe_bien = -1;
     }
 }
+/* Demande à l'utilisateur si il veut mettre une addresse ip ou bien une machine */
 int demande_nom_machine_ou_ip (){
     printf("L'adresse est t-il un nom de machine ou bien une adresse ip ? Tapez [aip/nom]\n");
     char * confirmation = lire(3);
@@ -183,7 +184,7 @@ int demande_nom_machine_ou_ip (){
         return -1;
     }
 }
-
+/* Traite l'addresse ip 125.001.020.030 -> 125.1.20.30 */
 char * ip_traitement(char * ip){
     char * ip_copy = (char *) malloc (sizeof(char) * 16);
     memset(ip_copy,'\0',16);
@@ -219,7 +220,7 @@ char * demande_nom_machine (){
     }
 }
 
-//Vérifie que str est bien un nombre 
+/* Vérifie que str est bien un nombre */
 int est_un_nombre (char * str){
     for (int i = 0; i < strlen(str) ; i ++)
         if(isdigit(str[i]) == 0)
@@ -269,7 +270,7 @@ char * demande_message (){
     return message;
 }
 
-//Exécute la commande MESS
+/* Exécute la commande MESS */
 void mess (){
     // Demande à l'utilisateur toute les informations utiles
     char * machine = demande_nom_machine ();
@@ -325,7 +326,7 @@ char * demande_nbmess (){
     return buf;
 }
 
-// Enlève les # dans texte
+/* Enlève les # dans texte */
 void remove_diese (char * texte){
     for (int i = 0; i < strlen(texte); i++){
         if (texte[i] == '#'){
@@ -334,7 +335,7 @@ void remove_diese (char * texte){
     }
 }
 
-//Affiche un message joliement,peut être utiliser pour LAST et HEAR
+/* Affiche un message joliement,peut être utiliser pour LAST et HEAR */
 void print_joli_message (char * message){
     char buf [162];
     memset(buf,'\0',162);
@@ -346,6 +347,7 @@ void print_joli_message (char * message){
     printf("%s/%s : %s\n", buf+5,buf+10,buf+19);
 }
 
+/* Liste les messages du diffuseurs */
 void list_message (int descripteur,int nbmess_to_int){
     printf("Veuillez patientez, nous recevons la liste des derniers messages...\n");
     char message_initial [162];
@@ -366,7 +368,7 @@ void list_message (int descripteur,int nbmess_to_int){
     printf("Fin de la reception des messages !\n");
     close(descripteur);
 }
-
+/* Commande Last */
 void last (){
     char * machine = demande_nom_machine();
     int port = demande_port();
@@ -424,6 +426,7 @@ int connection_multidiffusion (char * machine, int port){
     return sock;
 }
 
+/* Ecoute dans le port de multidiffusion */
 void listen_to_infinity (int descripteur){
     printf("Commencement de l'ecoute des messages...\n");
     char buf [162];
@@ -438,6 +441,7 @@ void listen_to_infinity (int descripteur){
     }
 }
 
+/* Demande une confirmation */
 int demande_confirmation(){
     printf("Attention, Vous ne pourrez PLUS JAMAIS revenir hors de l'ecoute!\n(sauf en faisant CTRL+C)\n");
     printf("Voulez vous encore continuez ? Tapez [oui/non]\n");
@@ -452,6 +456,8 @@ int demande_confirmation(){
         return -1;
     }
 }
+
+/* Commande Hear */
 void hear (){
     int verification = demande_confirmation();
     if (verification < 0)
