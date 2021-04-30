@@ -185,10 +185,12 @@ public class Diffuseur{
      * [4] : port gestionnaire
      * [5] : adresse gestionnaire
      * [6] : adresse de la machine où le diffuseur est présent
+     * [7] : nom du fichier contenant les messages du diffuseur (optionnel)
      * 
      * Les adresses devront être écrites sans omettre les 0 pour 
      * que l'enregistrement auprès du gestionnaire n'échoue pas
      * Ex : java src/Diffuseur joker123 5151 5252 225.010.020.030 4242 127.000.000.001 127.000.000.001
+     * Rajouter <bubs.txt> ou n'importe quel autre fichier a la fin pour initialiser vos propres messages
      */
     public static void main(String [] args){
         if(args.length < 7){
@@ -210,23 +212,43 @@ public class Diffuseur{
         }
         //dm.setDiffuseur(d);
 
-        //Initialisation de la liste de message (codé en dur peut être amélioré)
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "The apocalypse shall soon be realised..."));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "Are there any grounds for that boldness of yours?"));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "Oh...?"));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "Is this no longer useful..."));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "I've no intention of stopping here."));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "Cast away that flesh, onward to the next dimension..."));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "I'll be using your power. Paradise Lost!"));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "I wonder if I can still draw out more efficiency..."));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "Still putting up a fight...?!"));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "What an irritating lot..."));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "Be seated, and await your end!"));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "Tremble before the oblivion..."));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "Even the power of these twelve black wings...?!"));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "This doesn't bode well."));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "Have I been surpassed...?!"));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "So I have erred in my calculations..."));
+        //Initialisation de la liste de message si un fichier a été précisé 
+        boolean initial = true;
+        if(args.length >= 8){
+            try{
+                File fileMsg = new File(args[7]);
+                Scanner sc = new Scanner(fileMsg);
+                while (sc.hasNextLine()) {
+                    String data = sc.nextLine();
+                    dm.ajoutMsg(d.assembleMsgDiff(args[0], data));
+                }
+                sc.close();
+            } catch(FileNotFoundException e) {
+                System.out.println("Erreur le fichier des messages n'existe pas");
+                //e.printStackTrace();
+                initial = false;
+            }
+        }
+
+        if(args.length == 7 || !initial){
+            //Initialisation par défaut de la liste de message 
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "The apocalypse shall soon be realised..."));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "Are there any grounds for that boldness of yours?"));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "Oh...?"));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "Is this no longer useful..."));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "I've no intention of stopping here."));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "Cast away that flesh, onward to the next dimension..."));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "I'll be using your power. Paradise Lost!"));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "I wonder if I can still draw out more efficiency..."));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "Still putting up a fight...?!"));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "What an irritating lot..."));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "Be seated, and await your end!"));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "Tremble before the oblivion..."));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "Even the power of these twelve black wings...?!"));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "This doesn't bode well."));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "Have I been surpassed...?!"));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "So I have erred in my calculations..."));
+        }
         
         //Début des threads
         try{
