@@ -24,15 +24,19 @@ public class EcouteUtilisateur implements Runnable{
     //Traite correctement l'envoi de l'utilisateur selon la requête (peut être amélioré en cherchant des ' ' selon un nombre défini)
     private String[] traitementRequete(String s){
         String [] stock;
+
+        //traitement du LAST
         if(s.substring(0, 4).equals(Diffuseur.LAST)){
             stock = new String[2];
             stock[0] = s.substring(0, 4);
             stock[1] = s.substring(5, 8);
+        //traitement du MESS
         } else if (s.substring(0, 4).equals(Diffuseur.MESS)){
             stock = new String[3];
             stock[0] = s.substring(0, 4);
             stock[1] = s.substring(5, 13);
             stock[2] = s.substring(14, s.length());
+        //traitement par défaut (dernier cas = envoie de message via LAST)
         } else {
             stock = new String[2];
             stock[0] = s.substring(0, 8);
@@ -49,23 +53,38 @@ public class EcouteUtilisateur implements Runnable{
             //Récupération de la pos du message actuel et du nombre total de message envoyés
             int posMsg = this.liveStream.getIndice();
             int msgEnvoy = this.liveStream.getEnvoye();
+            int msgUser = this.liveStream.getMsgUtilisateurs();
 
             //Si l'utilisateur demande par ex 200 msg mais que seulement 10 ont été diffusés
             if(nbMsg > msgEnvoy){
                 nbMsg = msgEnvoy;
             }
 
-            for(int i = 0; i < nbMsg; i++){
+            int i = 0;
+            while(i < nbMsg){
                 if (posMsg == -1){
                     posMsg = this.liveStream.getListMsg().size() - 1;
                 }
 
                 String [] ancienMsg = traitementRequete(this.liveStream.getListMsg().get(posMsg));
+                String id = Diffuseur.formatageEntier(msgEnvoy);
 
-                pw.print(Diffuseur.OLDM + " " + Diffuseur.formatageEntier(msgEnvoy) + " " + ancienMsg[0] + " " + ancienMsg[1] + "\r\n");
+                if(!ancienMsg[0].equals(this.parent.getIdentifiantDiff())){
+                    if(msgUser > 0){
+                        pw.print(Diffuseur.OLDM + " " + id + " " + ancienMsg[0] + " " + ancienMsg[1] + "\r\n");
+                        pw.flush();
+                    }
+                    msgUser--;
+                    posMsg--;
+                    continue;
+                } 
+                    
+                pw.print(Diffuseur.OLDM + " " + id + " " + ancienMsg[0] + " " + ancienMsg[1] + "\r\n");
                 pw.flush();
+
                 posMsg--;
                 msgEnvoy--;
+                i++;
             }
             pw.print(Diffuseur.ENDM + "\r\n");
             pw.flush();
@@ -94,6 +113,7 @@ public class EcouteUtilisateur implements Runnable{
                 if (traitement[0].equals(Diffuseur.MESS) 
                     && traitement[1].length() <= Diffuseur.TAILLEID
                     && traitement[2].length() <= Diffuseur.TAILLEMAXMSG) {
+
                     liveStream.ajoutMsg(parent.assembleMsgDiff(traitement[1], traitement[2]));
 
                     pw.print(Diffuseur.ACKM + "\r\n");

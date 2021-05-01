@@ -58,9 +58,9 @@ class IMOKThread extends Thread implements Runnable{
                     }
                 }
             } else if(reponse.equals(Diffuseur.RENO)){
-                System.out.println("Erreur enregistrement avec le gestionnaire échoué");
+                System.out.println("[Erreur] : enregistrement avec le gestionnaire échoué");
             } else {
-                System.out.println("Erreur mauvais format de retour après l'enregistrement");
+                System.out.println("[Erreur] : mauvais format de retour après l'enregistrement");
             }
         } catch(Exception e) {
             System.out.println("Erreur lors de l'enregistrement auprès du gestionnaire");
@@ -105,6 +105,10 @@ public class Diffuseur{
         this.multiDiff = addressDiff;
         this.portMultiDiff = portDiff;
         //this.listMsg = new LinkedList<String>();
+    }
+
+    public String getIdentifiantDiff(){
+        return this.identifiant;
     }
 
     /*public void setEcoute(EcouteUtilisateur eu){
@@ -198,19 +202,24 @@ public class Diffuseur{
             System.exit(1);
         }
 
+        if(args[3].length() != 15 || args[5].length() != 15 || args[6].length() != 15){
+            System.out.println("[Erreur] : Les adresses ne sont pas dans le bon format");
+            System.exit(1);
+        }
+
         //Initialisation des variables
         LinkedList<String> msgDiff = new LinkedList<String>();
 
         DiffuseMulticast dm = new DiffuseMulticast(msgDiff, stringToInt(args[1]), args[3]);
         Diffuseur d = new Diffuseur(args[0], stringToInt(args[2]), stringToInt(args[1]), args[3]);
         EcouteUtilisateur eu = null;
+        dm.setDiffuseur(d);
 
         //Phase d'enregistrement
         boolean test = d.enregistrementGestionnaire(stringToInt(args[4]), args[5], args[6]);
         if(!test){
             System.out.println("Enregistrement avec le gestionnaire échoué");
         }
-        //dm.setDiffuseur(d);
 
         //Initialisation de la liste de message si un fichier a été précisé 
         boolean initial = true;
@@ -224,7 +233,7 @@ public class Diffuseur{
                 }
                 sc.close();
             } catch(FileNotFoundException e) {
-                System.out.println("Erreur le fichier des messages n'existe pas");
+                System.out.println("[Erreur] : le fichier des messages n'existe pas");
                 //e.printStackTrace();
                 initial = false;
             }
