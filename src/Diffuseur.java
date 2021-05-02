@@ -124,7 +124,8 @@ public class Diffuseur{
     }
 
     //Rajoute des 0 devant le nombre pour qu'il soit encodé sous 4 bits
-    public static String formatageEntier(int i){
+    public static String formatageEntier(int nb){
+        int i = nb % 10000;
         if(i < 10){
             return "000"+i;
         } else if(i < 100){
