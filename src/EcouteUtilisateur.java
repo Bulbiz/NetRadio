@@ -61,7 +61,7 @@ public class EcouteUtilisateur implements Runnable{
             }
 
             int i = 0;
-            while(i < nbMsg){
+            while(i <= nbMsg){
                 if (posMsg == -1){
                     posMsg = this.liveStream.getListMsg().size() - 1;
                 }
