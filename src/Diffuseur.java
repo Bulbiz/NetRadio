@@ -3,59 +3,67 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-class IMOKThread extends Thread{
+//Thread de maintien en vie avec le gestionnaire
+class IMOKThread extends Thread implements Runnable{
     private Socket gestionnaire;
-    private BufferedReader br;
-    private PrintWriter pw;
+    private BufferedReader lecteur;
+    private PrintWriter ecrivain;
+    //champ mess doit être généré avec la méthode enregistrementGestionnaire() de Diffuseur.java
     private String mess;
 
-    public IMOKThread (Socket s,String enregistrement_mess){
+    public IMOKThread(Socket s, String enregistrement_mess){
         this.mess = enregistrement_mess;
         this.gestionnaire = s;
         try{
-            this.br = new BufferedReader(new InputStreamReader(this.gestionnaire.getInputStream()));
-            this.pw = new PrintWriter(new OutputStreamWriter(this.gestionnaire.getOutputStream()));
+            this.lecteur = new BufferedReader(new InputStreamReader(this.gestionnaire.getInputStream()));
+            this.ecrivain = new PrintWriter(new OutputStreamWriter(this.gestionnaire.getOutputStream()));
         }catch(Exception e){
+            System.out.println("Erreur lors de la création du thread d'enregistrement");
             e.printStackTrace();
         }
     }
 
-    public void run (){
+    public void run(){
         try{
-            pw.print(this.mess);
-            pw.flush();
+            //enregistrement avec le gestionnaire via REGI
+            ecrivain.print(this.mess);
+            ecrivain.flush();
 
-            String reponse = br.readLine();
-            String msg = br.readLine();
+            //double readLine() pour récupérer REOK et RUOK 
+            String reponse = lecteur.readLine();
+            String msg = lecteur.readLine();
+
+            //pour éviter des nullPointeur
+            if (reponse == null || msg == null){
+                return;
+            }
+
             if(reponse.equals(Diffuseur.REOK)){
                 while (true){
                     try{
-                        System.out.println("MSG : " + msg);
+                        //envoie de la réponse suite à RUOK reçu
+                        if (msg.equals(Diffuseur.RUOK)){
+                            ecrivain.print(Diffuseur.IMOK + "\r\n");
+                            ecrivain.flush();
+                        }
+                        
+                        //attente du prochain message du gestionnaire
+                        msg = lecteur.readLine();
                         if (msg == null){
                             return;
                         }
-                        if (msg.equals(Diffuseur.RUOK)){
-                            System.out.println("aaaaaaaaaaaaaa: " + msg);
-                            pw.print(Diffuseur.IMOK + "\r\n");
-                            pw.flush();
-                            System.out.println("bbbbbbbbbbbbbbbb: " + msg);
-                        }
-                        if (gestionnaire.isClosed()){
-                            break;
-                        }
-                        msg = br.readLine();
                     }catch(Exception e){
                         e.printStackTrace();
                         return;
                     }
                 }
             } else if(reponse.equals(Diffuseur.RENO)){
-                System.out.println("Erreur post enregistrement avec le gestionnaire");
+                System.out.println("[Erreur] : enregistrement avec le gestionnaire échoué");
             } else {
-                System.out.println("Erreur mauvais format");
+                System.out.println("[Erreur] : mauvais format de retour après l'enregistrement");
             }
         } catch(Exception e) {
-            System.out.println("Erreur durant l'enregistrement auprès du gestionnaire");
+            System.out.println("Erreur lors de l'enregistrement auprès du gestionnaire");
         }
     }
 }
@@ -66,11 +74,11 @@ public class Diffuseur{
     private int portMsg;
     private String multiDiff;
     private int portMultiDiff;
-    private LinkedList<String> listMsg;
+    //private LinkedList<String> listMsg;
     /*private DiffuseMulticast live;
     private EcouteUtilisateur ecoute;*/
 
-    //public int numMsg = 0;
+    //Champs de constantes pour modularité du code
     public static final String ACKM = "ACKM";
     public static final String ENDM = "ENDM";
     public static final String LAST = "LAST";
@@ -96,25 +104,18 @@ public class Diffuseur{
         this.portMsg = portRecv;
         this.multiDiff = addressDiff;
         this.portMultiDiff = portDiff;
-        this.listMsg = new LinkedList<String>();
+        //this.listMsg = new LinkedList<String>();
+    }
+
+    public String getIdentifiantDiff(){
+        return this.identifiant;
     }
 
     /*public void setEcoute(EcouteUtilisateur eu){
         this.ecoute = eu;
     }*/
 
-    /*public Diffuseur(String id, DatagramSocket recv, InetSocketAddress multiDiff, DatagramSocket portDiff) throws Exception{
-        if (id.length() > 8){
-            throw new Exception("[Erreur] : Impossible d'assembler le diffuseur, rappel : l'identifiant ne doit faire plus de 8 caractères\n");
-        }
-        
-        this.identifiant = id;
-        this.portMsg = recv;
-        this.multiDiff = multiDiff;
-        this.portMultiDiff = portDiff;
-        this.listMsg = new LinkedList<String>();
-    }*/
-
+    //Rajoute # a une string jusqu'à ce que sa taille atteigne iterFormat
     public static String formatageString(String s, int iterFormat){
         for(int i = s.length(); i < iterFormat; i++){
             s = s + "#";
@@ -122,7 +123,9 @@ public class Diffuseur{
         return s;
     }
 
-    public static String formatageEntier(int i){
+    //Rajoute des 0 devant le nombre pour qu'il soit encodé sous 4 bits
+    public static String formatageEntier(int nb){
+        int i = nb % 10000;
         if(i < 10){
             return "000"+i;
         } else if(i < 100){
@@ -134,65 +137,40 @@ public class Diffuseur{
         }
     } 
 
+    //Assemble un message qui sera ajouté dans la liste de message du diffuseur
     public String assembleMsgDiff(String id, String message){
-        if (message.length() > TAILLEMAXMSG){
-            return "";
+        //Ce cas ne devrait jamais être atteint, est une sécurité
+        if (message.length() > TAILLEMAXMSG || id.length() > TAILLEID){
+            return "ERREUR## " + formatageString("ERREUR", TAILLEMAXMSG) + "\r\n";
         }
-
-        /*if (numMsg == 9999){
-            numMsg = 0;
-        } else {
-            numMsg++;
-        }*/
 
         return id + " " + formatageString(message, TAILLEMAXMSG) + "\r\n";
     }
 
-    public String assembleMsgEnregistrement(String ip2){
+    //Assemble un message d'enregistrement auprès du gestionnaire
+    private String assembleMsgEnregistrement(String ip2){
         return REGI + " " + identifiant + " " + multiDiff + " " + portMultiDiff + " " + ip2 + " " + portMsg + "\r\n";
     }
 
-    public boolean enregistrementGestionnaire(int portGestionnaire, String adressGestionnaire, String adressDiff){
+    //Démarre un thread pour s'enregistrer auprès du gestionnaire et se maintenir en vie
+    private boolean enregistrementGestionnaire(int portGestionnaire, String adressGestionnaire, String adressDiff){
         try{    
             Socket gestio = new Socket(adressGestionnaire, portGestionnaire);
             String mess = assembleMsgEnregistrement(adressDiff);
-            IMOKThread t = new IMOKThread(gestio,mess);
+            IMOKThread t = new IMOKThread(gestio, mess);
             t.start();
             return true;
-        }catch(Exception e){
+        } catch(Exception e) {
             return false;
         }
-        
-        /*try{
-            Socket gestio = new Socket(adressGestionnaire, portGestionnaire);
-            BufferedReader br = new BufferedReader(new InputStreamReader(gestio.getInputStream()));
-            PrintWriter pw = new PrintWriter(new OutputStreamWriter(gestio.getOutputStream()));
-            pw.print(assembleMsgEnregistrement(adressDiff));
-            pw.flush();
-
-            String reponse = br.readLine();
-
-            if(reponse.equals(REOK)){
-                IMOKThread t = new IMOKThread(gestio);
-                t.start();
-                return true;
-            } else if(reponse.equals(RENO)){
-                System.out.println("Erreur post enregistrement avec le gestionnaire");
-                return false;
-            } else {
-                System.out.println("Erreur mauvais format");
-                return false;
-            }
-        } catch(Exception e) {
-            System.out.println("Erreur durant l'enregistrement auprès du gestionnaire");
-            return false;
-        }*/
     }
 
+    /*Obselète, le Diffuseur n'utilise pas sa liste de message 
     public void addToList(String msg){
         this.listMsg.add(msg);
-    }
+    }*/
 
+    //Convertit un string en entier et gère les problèmes d'exception
     public static int stringToInt(String s){
         int i = -1;
         try{
@@ -212,43 +190,77 @@ public class Diffuseur{
      * [4] : port gestionnaire
      * [5] : adresse gestionnaire
      * [6] : adresse de la machine où le diffuseur est présent
+     * [7] : nom du fichier contenant les messages du diffuseur (optionnel)
      * 
+     * Les adresses devront être écrites sans omettre les 0 pour 
+     * que l'enregistrement auprès du gestionnaire n'échoue pas
      * Ex : java src/Diffuseur joker123 5151 5252 225.010.020.030 4242 127.000.000.001 127.000.000.001
-     * Ex : java src/Diffuseur aledaus 5151 5253 225.010.020.030 4242 127.000.000.001 127.000.000.001
+     * Rajouter <bubs.txt> ou n'importe quel autre fichier a la fin pour initialiser vos propres messages
      */
     public static void main(String [] args){
-        //TODO : rendre args[5,6] obligatoire
-        if(args.length < 5){
+        if(args.length < 7){
             System.out.println("[Erreur] : Pas assez d'arguments");
             System.exit(1);
         }
 
+        if(args[3].length() != 15 || args[5].length() != 15 || args[6].length() != 15){
+            System.out.println("[Erreur] : Les adresses ne sont pas dans le bon format");
+            System.exit(1);
+        }
+
+        //Initialisation des variables
         LinkedList<String> msgDiff = new LinkedList<String>();
 
         DiffuseMulticast dm = new DiffuseMulticast(msgDiff, stringToInt(args[1]), args[3]);
         Diffuseur d = new Diffuseur(args[0], stringToInt(args[2]), stringToInt(args[1]), args[3]);
         EcouteUtilisateur eu = null;
-        boolean test = d.enregistrementGestionnaire(stringToInt(args[4]), args[5], args[6]);
-        System.out.println("Enregistrement : " + test);
         dm.setDiffuseur(d);
 
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "The apocalypse shall soon be realised..."));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "Are there any grounds for that boldness of yours?"));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "Oh...?"));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "Is this no longer useful..."));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "I've no intention of stopping here."));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "Cast away that flesh, onward to the next dimension..."));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "I'll be using your power. Paradise Lost!"));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "I wonder if I can still draw out more efficiency..."));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "Still putting up a fight...?!"));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "What an irritating lot..."));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "Be seated, and await your end!"));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "Tremble before the oblivion..."));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "Even the power of these twelve black wings...?!"));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "This doesn't bode well."));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "Have I been surpassed...?!"));
-        dm.ajoutMsg(d.assembleMsgDiff(args[0], "So I have erred in my calculations..."));
+        //Phase d'enregistrement
+        boolean test = d.enregistrementGestionnaire(stringToInt(args[4]), args[5], args[6]);
+        if(!test){
+            System.out.println("Enregistrement avec le gestionnaire échoué");
+        }
+
+        //Initialisation de la liste de message si un fichier a été précisé 
+        boolean initial = true;
+        if(args.length >= 8){
+            try{
+                File fileMsg = new File(args[7]);
+                Scanner sc = new Scanner(fileMsg);
+                while (sc.hasNextLine()) {
+                    String data = sc.nextLine();
+                    dm.ajoutMsg(d.assembleMsgDiff(args[0], data));
+                }
+                sc.close();
+            } catch(FileNotFoundException e) {
+                System.out.println("[Erreur] : le fichier des messages n'existe pas");
+                //e.printStackTrace();
+                initial = false;
+            }
+        }
+
+        if(args.length == 7 || !initial){
+            //Initialisation par défaut de la liste de message 
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "The apocalypse shall soon be realised..."));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "Are there any grounds for that boldness of yours?"));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "Oh...?"));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "Is this no longer useful..."));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "I've no intention of stopping here."));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "Cast away that flesh, onward to the next dimension..."));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "I'll be using your power. Paradise Lost!"));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "I wonder if I can still draw out more efficiency..."));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "Still putting up a fight...?!"));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "What an irritating lot..."));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "Be seated, and await your end!"));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "Tremble before the oblivion..."));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "Even the power of these twelve black wings...?!"));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "This doesn't bode well."));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "Have I been surpassed...?!"));
+            dm.ajoutMsg(d.assembleMsgDiff(args[0], "So I have erred in my calculations..."));
+        }
         
+        //Début des threads
         try{
             ServerSocket server = new ServerSocket(stringToInt(args[2]));
             Thread stream = new Thread(dm);

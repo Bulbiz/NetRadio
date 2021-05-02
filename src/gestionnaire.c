@@ -224,8 +224,8 @@ void ca_va(int descripteur,char * buff){
 void envoieListe (int descripteur, int nbDiffuseur, char * envoieNumDiff, char * buffDiffuseur){
     nbDiffuseur = diffuseurPresent();
     printf("nbdiffuseur présent : %d\n",nbDiffuseur);
-    sprintf(envoieNumDiff,"LINB %s",verifNombre(nbDiffuseur));
-    send(descripteur,envoieNumDiff, 7, 0);
+    sprintf(envoieNumDiff,"LINB %s\r\n",verifNombre(nbDiffuseur));
+    send(descripteur,envoieNumDiff, 9, 0);
     printf("Message d'envoieNumdiffuseur : %s\n",envoieNumDiff);
 
     for(int i = 0; i < MAX_DIFFUSEUR; i++){

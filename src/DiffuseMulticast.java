@@ -10,8 +10,16 @@ public class DiffuseMulticast implements Runnable{
     private int portMulticast;
     private String adresseMulticast;
     private Diffuseur parent;
+
+    //Temps d'intervalle entre chaque diffusion de message
+    private int intervalleMsg = 2000;
+    
+    //Position du message actuellement diffusé dans la liste
     private int indice = 0;
+    //Nombre total de messages diffusés jusqu'à présent
     private int msgEnvoye = 0;
+    //Nombre total de messages transmis via MESS
+    private int msgUtilisateurs = 0;
 
     public DiffuseMulticast(LinkedList<String> diffuseMsg, int port, String adresse){
         this.diffuseMsg = diffuseMsg;
@@ -27,12 +35,15 @@ public class DiffuseMulticast implements Runnable{
         return this.diffuseMsg;
     }
 
-    //9 = format du nombre (ex: 0002) + \r\n + 3 espaces
-    public void ajoutMsg(String s){
-        if(s.length() <= Diffuseur.TAILLEMAXMSG + Diffuseur.TAILLEID + Diffuseur.DIFF.length() + 9){
+    /* 
+     * Ajoute un message dans la liste de diffusion
+     * Sans vérification car le message doit d'abord passer par assembleMsgDiff()
+     */
+    public synchronized void ajoutMsg(String s){
+        if(this.diffuseMsg.size() < 10000){
             this.diffuseMsg.add(s);
         } else {
-            System.out.println("Erreur ajout msg");
+            System.out.println("Erreur lors de l'ajout du message dans la liste de diffusion");
         }
     }
 
@@ -44,12 +55,24 @@ public class DiffuseMulticast implements Runnable{
         return this.indice;
     }
 
+    public int getMsgUtilisateurs(){
+        return this.msgUtilisateurs;
+    }
+
+    //Incrémente l'indice de diffusion 
     private synchronized void incrementeIndice(){
         this.indice = (this.indice + 1) % diffuseMsg.size();
     }
 
+    //Assemble un message pour la diffusion
     private String assembleDiff(){
-        return Diffuseur.DIFF + " " + Diffuseur.formatageEntier(msgEnvoye) + " " + this.diffuseMsg.get(indice);
+        String msg = this.diffuseMsg.get(indice);
+
+        if(!msg.substring(0, 8).equals(parent.getIdentifiantDiff())){
+            this.msgUtilisateurs++;
+        }
+
+        return Diffuseur.DIFF + " " + Diffuseur.formatageEntier(msgEnvoye) + " " + msg;
     }
 
     public void run(){
@@ -58,16 +81,14 @@ public class DiffuseMulticast implements Runnable{
             byte[]data;
             InetSocketAddress ia = new InetSocketAddress(adresseMulticast, portMulticast);
             
+            //Diffusion des messages
             while(true){
-                /*if (indice >= diffuseMsg.size()){
-                    indice = 0;
-                }*/
                 data = assembleDiff().getBytes();
                 DatagramPacket msg = new DatagramPacket(data, data.length, ia);
                 dso.send(msg);
                 incrementeIndice();
                 msgEnvoye++;
-                Thread.sleep(2000);
+                Thread.sleep(intervalleMsg);
             }
         } catch(Exception e){
             e.printStackTrace();
