@@ -12,7 +12,7 @@
 char * pseudo;
 int tout_se_passe_bien = 0;// Vérifie que tout se passe bien 
 
-//Code trouvé sur internet qui permet de flush stdin après une lecture
+/* Code trouvé sur internet qui permet de flush stdin après une lecture */
 void flush_stdin()
 {
     int c = 0;
@@ -21,7 +21,8 @@ void flush_stdin()
         c = getchar();
     }
 }
-//Lecture de l'entrée standard en complétant avec des dièses
+
+/* Lecture de l'entrée standard en complétant avec des dièses */
 char * lire_diese (int size){
     char * lecture = malloc (sizeof(char) * (size + 3));
     memset(lecture,'#',size);
@@ -40,7 +41,8 @@ char * lire_diese (int size){
 
     return lecture;
 }
-//Lecture de l'entrée standard avec une taille exacte
+
+/* Lecture de l'entrée standard avec une taille exacte */
 char * lire (int size){
     char * lecture = malloc (sizeof(char) * (size + 3));
     memset(lecture,'\0',size + 3);
@@ -57,7 +59,8 @@ char * lire (int size){
     }
     return lecture;
 }
-//Lecture de l'entrée standard avec une taille variable
+
+/* Lecture de l'entrée standard avec une taille variable */
 char * lire_variable (int size){
     char * lecture = malloc (sizeof(char) * (size + 3));
     memset(lecture,'\0',size);
@@ -111,7 +114,8 @@ int connection (char * machine, int port){
         return -1;
     }
 }
-//Affichage d'un item de sorte que cela soit joli
+
+/* Affichage d'un item de sorte que cela soit joli */
 void print_formatage_joli_item (char * item){
     char buf [58];
     memset(buf,'\0',58);
@@ -125,7 +129,7 @@ void print_formatage_joli_item (char * item){
     printf("%s -> Multi(%s : %s) Ecoute(%s : %s)\n",buf + 5,buf + 14,buf + 30,buf + 35,buf + 51);
 }
 
-//Liste les diffuseurs pour la commande LIST
+/* Liste les diffuseurs pour la commande LIST */
 void list_diffuseur (int descripteur){
     printf("Veuillez patientez, nous recevons la liste des diffuseurs ...\n");
     char message_initial [10];
@@ -170,6 +174,7 @@ void recuperateur_erreur (int signo){
         tout_se_passe_bien = -1;
     }
 }
+
 /* Demande à l'utilisateur si il veut mettre une addresse ip ou bien une machine */
 int demande_nom_machine_ou_ip (){
     printf("L'adresse est t-il un nom de machine ou bien une adresse ip ? Tapez [aip/nom]\n");
@@ -184,6 +189,7 @@ int demande_nom_machine_ou_ip (){
         return -1;
     }
 }
+
 /* Traite l'addresse ip 125.001.020.030 -> 125.1.20.30 */
 char * ip_traitement(char * ip){
     char * ip_copy = (char *) malloc (sizeof(char) * 16);
@@ -203,6 +209,7 @@ char * ip_traitement(char * ip){
     }
     return ip_copy;
 }
+
 /* Demande à l'utilisateur le nom de la machine */
 char * demande_nom_machine (){
     if (demande_nom_machine_ou_ip () > 0){
@@ -368,6 +375,7 @@ void list_message (int descripteur,int nbmess_to_int){
     printf("Fin de la reception des messages !\n");
     close(descripteur);
 }
+
 /* Commande Last */
 void last (){
     char * machine = demande_nom_machine();
@@ -492,7 +500,7 @@ int demande_taille_mess (){
 }
 
 
-
+/* Help */
 void help (){
     printf("LIST -> Demande à un gestionnaire de diffuseur la liste de ces diffuseurs\n");
     printf("MESS -> Envoie un message à un diffuseur pour qu'il puisse le retransmettre\n");
@@ -505,7 +513,7 @@ void help (){
 /* Demande ce que veut faire l'utilisateur */
 void choix_du_service (){
     while (1){
-        printf("Que voulez vous faire entre [LIST], [MESS], [LAST], [HEAR], [STCP], [HELP], [EXIT] ?\n");
+        printf("Que voulez vous faire entre [LIST], [MESS], [LAST], [HEAR], [HELP], [EXIT] ?\n");
         char * commande = lire(4);
 
         if (strcmp(commande,"LIST") == 0){
@@ -529,7 +537,7 @@ void choix_du_service (){
         }
     }
 }
-
+/* Configuration initiale */
 void configuration (){
     printf("Bonjour, pouvez vous me donnez votre nom ? [<= 8 caractère]\n");
     pseudo = lire_diese(8);
