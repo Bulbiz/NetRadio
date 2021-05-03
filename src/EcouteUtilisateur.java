@@ -18,6 +18,9 @@ public class EcouteUtilisateur implements Runnable{
     }
 
     public void setDiffuseur(Diffuseur d){
+        if(d == null){
+            return;
+        }
         this.parent = d;
     }
 
@@ -61,7 +64,7 @@ public class EcouteUtilisateur implements Runnable{
             }
 
             int i = 0;
-            while(i <= nbMsg){
+            while(i < nbMsg){
                 if (posMsg == -1){
                     posMsg = this.liveStream.getListMsg().size() - 1;
                 }
@@ -115,6 +118,8 @@ public class EcouteUtilisateur implements Runnable{
                     && traitement[2].length() <= Diffuseur.TAILLEMAXMSG) {
 
                     liveStream.ajoutMsg(parent.assembleMsgDiff(traitement[1], traitement[2]));
+                    System.out.println("Nous avons reçu un message de " + traitement[1]);
+                    System.out.println("Description : " + traitement[2]);
 
                     pw.print(Diffuseur.ACKM + "\r\n");
                     pw.flush();
@@ -130,7 +135,7 @@ public class EcouteUtilisateur implements Runnable{
                 }
             }
         } catch(Exception e) {
-            System.out.println(e);
+            System.out.println("Erreur durant l'écoute");
             e.printStackTrace();
         }
     }
