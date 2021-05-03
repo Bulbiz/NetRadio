@@ -43,7 +43,9 @@ class IMOKThread extends Thread implements Runnable{
                     try{
                         //envoie de la réponse suite à RUOK reçu
                         if (msg.equals(Diffuseur.RUOK)){
+                            System.out.println("Reçu RUOK");
                             ecrivain.print(Diffuseur.IMOK + "\r\n");
+                            System.out.println("Envoie IMOK");
                             ecrivain.flush();
                         }
                         
@@ -96,7 +98,7 @@ public class Diffuseur{
 
     public Diffuseur(String id, int portRecv, int portDiff, String addressDiff){
         if (portDiff > FORMATPORT || portRecv > FORMATPORT || id.length() > TAILLEID){
-            System.out.println("[Erreur] : Impossible d'assembler le diffuseur, rappel : le numéro des ports doit être inférieur à 9999 et l'identifiant ne doit faire plus de 8 caractères\n");
+            System.out.println("[Erreur] : Impossible d'assembler le diffuseur\nRappel :\n- Le numéro des ports doit être inférieur à 9999\n- L'identifiant ne doit pas faire plus de 8 caractères");
             System.exit(1);
         }
         
@@ -273,7 +275,7 @@ public class Diffuseur{
                 ecoute.start();
             }
         } catch(Exception e) {
-            System.out.println(e);
+            System.out.println("Il y a eu une erreur sur la Socket");
             e.printStackTrace();
         }
     }

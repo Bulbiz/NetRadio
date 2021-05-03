@@ -28,7 +28,7 @@ char * lire_diese (int size){
     memset(lecture,'#',size);
     lecture[size] = '\0';
     if (fgets(lecture,size + 1,stdin) == NULL){
-        printf("Erreur sur la lecture au clavier !");
+        printf("Erreur sur la lecture au clavier !\n");
     }
 
     if(strchr(lecture,'\n') == NULL)
@@ -49,7 +49,7 @@ char * lire (int size){
     while(strlen(lecture) != size){
         memset(lecture,'\0',size + 3);
         if (fgets(lecture,size + 1,stdin) == NULL)
-            printf("Erreur sur la lecture au clavier !");
+            printf("Erreur sur la lecture au clavier !\n");
 
         if(strchr(lecture,'\n') == NULL)
             flush_stdin();
@@ -65,7 +65,7 @@ char * lire_variable (int size){
     char * lecture = malloc (sizeof(char) * (size + 3));
     memset(lecture,'\0',size);
     if (fgets(lecture,size + 1,stdin) == NULL)
-        printf("Erreur sur la lecture au clavier !");
+        printf("Erreur sur la lecture au clavier !\n");
 
     if(strchr(lecture,'\n') == NULL)
         flush_stdin();
@@ -135,24 +135,24 @@ void list_diffuseur (int descripteur){
     char message_initial [10];
     memset(message_initial,'\0',10);
     if (recv(descripteur,message_initial,9,0) < 0){
-        printf("Il y a eu une erreur lors de la réception du message \nFermeture de la connection ... \n");
+        printf("Il y a eu une erreur lors de la réception du message \nFermeture de la connexion ... \n");
         close(descripteur);
         return;
     }
     message_initial[7] = '\0';
 
     if (strncmp(message_initial,"LINB",4) != 0){
-        printf("Le message reçu est mauvais !Il s'agissait de  : %s \nFermeture de la connection ... \n",message_initial);
+        printf("Le message reçu est mauvais ! Il s'agissait de  : %s \nFermeture de la connexion ... \n",message_initial);
         close(descripteur);
         return;
     }
 
     int nombre_de_message = atoi(message_initial + 5);
-    char buf [58];
+    char buf [60];
     for (int i = 0; i < nombre_de_message ; i ++ ){
-        memset(buf,'\0',58);
-        if(recv(descripteur,buf,57,0) < 0){
-            printf("Il y a eu une erreur lors de la réception du message \nFermeture de la connection ... \n");
+        memset(buf,'\0',60);
+        if(recv(descripteur,buf,59,0) < 0){
+            printf("Il y a eu une erreur lors de la réception du message \nFermeture de la connexion ... \n");
             close(descripteur);
             return;
         }
@@ -160,7 +160,7 @@ void list_diffuseur (int descripteur){
         if (strncmp(buf,"ITEM",4) == 0){
             print_formatage_joli_item (buf);
         }else{
-            printf("Le message reçu est mauvais !\nLe message était %s\nFermeture de la connection ... \n",buf);
+            printf("Le message reçu est mauvais !\nLe message était %s\nFermeture de la connexion ... \n",buf);
             close(descripteur);
             return;
         }
@@ -180,7 +180,7 @@ int demande_nom_machine_ou_ip (){
     printf("L'adresse est t-il un nom de machine ou bien une adresse ip ? Tapez [aip/nom]\n");
     char * confirmation = lire(3);
     while (strcmp(confirmation,"aip") != 0 && strcmp(confirmation,"nom")){
-        printf("Tapez [aip/nom]");
+        printf("Tapez [aip/nom]\n");
         confirmation = lire(3);
     }
     if (strcmp(confirmation,"aip") == 0){
@@ -213,11 +213,11 @@ char * ip_traitement(char * ip){
 /* Demande à l'utilisateur le nom de la machine */
 char * demande_nom_machine (){
     if (demande_nom_machine_ou_ip () > 0){
-        printf("Sur quelle addresse ip se connecter ? [Exactement 15 caractères]\n");
+        printf("Sur quelle adresse ip se connecter ? [EXACTEMENT 15 caractères]\n");
         char * ip = lire(15);
-        printf("L'addresse indiquer est %s!\n",ip);
+        printf("L'adresse indiquée est %s!\n",ip);
         ip = ip_traitement (ip);
-        printf("Après traitement, l'addresse est %s!\n",ip);
+        printf("Après traitement, l'adresse est %s!\n",ip);
         return ip;
     }else{
         printf("Sur quelle machine se connecter ? [<500 caractères]\n");
@@ -240,12 +240,12 @@ int est_un_nombre (char * str){
 int demande_port (){
     int port = 0;
     while(port == 0){
-        printf("Sur quel port se connecter ? [Exactement 4 chiffres]\n");
+        printf("Sur quel port se connecter ? [EXACTEMENT 4 chiffres]\n");
         char * buf = lire(4);
         if(est_un_nombre(buf) == 0)
             port = atoi(buf);
     }
-    printf("La connection se fera sur le port %d\n",port);
+    printf("La connexion se fera sur le port %d\n",port);
     return port;
 }
 
@@ -263,7 +263,7 @@ void list (){
     if(tout_se_passe_bien == 0){
         list_diffuseur(descripteur);
     }else{
-        printf("Il y a eu une erreur de connection, désolé ...\n");
+        printf("Il y a eu une erreur de connexion, désolé ...\n");
         tout_se_passe_bien = 0;
         close(descripteur);
     }
@@ -271,7 +271,7 @@ void list (){
 
 /* Demande à l'utilisateur le message à envoyer */
 char * demande_message (){
-    printf("Quel est le message que vous voulez affichez ? [<= 140 caractères]\n");
+    printf("Quel est le message que vous voulez afficher ? [<= 140 caractères]\n");
     char  * message = lire_diese(140);
     printf("Le message à envoyer est %s!\nIl est bien de taille : %ld\n",message,strlen(message));
     return message;
@@ -293,7 +293,7 @@ void mess (){
     sprintf(colis,"MESS %s %s\r\n",pseudo,message);
     int size = send(descripteur,colis,156,0);
     if (size < 0){
-        printf("Il y a eu une erreur dans l'envoi du message!\n");
+        printf("Il y a eu une erreur durant l'envoi du message!\n");
         close(descripteur);
         return;
     }
@@ -304,7 +304,7 @@ void mess (){
     //Reçoit le message
     size = recv(descripteur,receveur,6,0);
     if (size < 0){
-        printf("Il y a eu une erreur dans la reception du message!\n");
+        printf("Il y a eu une erreur dans la réception du message!\n");
         close(descripteur);
         return;
     }
@@ -312,9 +312,9 @@ void mess (){
     //Vérifie que le message à bien été reçu
     receveur[4] = '\0';
     if(strcmp(receveur,"ACKM") == 0)
-        printf("Le message à bien été reçu par le diffuseur!\n");
+        printf("Le message a bien été reçu par le diffuseur!\n");
     else
-        printf("Le message n'a pas bien été reçu par le diffuseur, nous avons reçu '%s'\n",receveur);
+        printf("Le message n'a pas été bien reçu par le diffuseur, nous avons reçu '%s'\n",receveur);
     close(descripteur);
 
 }
@@ -324,7 +324,7 @@ char * demande_nbmess (){
     char * buf;
     int port = 0;
     while(port == 0){
-        printf("Combien de message voulez vous recevoir ? [Entre 000 et 999]\n");
+        printf("Combien de message voulez vous recevoir ? [Entre 000 et 999, EXACTEMENT 3 caractères]\n");
         buf = lire(3);
         if(est_un_nombre(buf) == 0)
             port = 1;
@@ -356,7 +356,7 @@ void print_joli_message (char * message){
 
 /* Liste les messages du diffuseurs */
 void list_message (int descripteur,int nbmess_to_int){
-    printf("Veuillez patientez, nous recevons la liste des derniers messages...\n");
+    printf("Veuillez patienter, nous recevons la liste des derniers messages...\n");
     char message_initial [162];
     memset(message_initial,'\0',162);
     int i = 0;
@@ -364,7 +364,7 @@ void list_message (int descripteur,int nbmess_to_int){
         i = i + 1;
         memset(message_initial,'\0',162);
         if (recv(descripteur,message_initial,161,0) < 0){
-            printf("Il y a eu une erreur lors de la réception du message \nFermeture de la connection ... \n");
+            printf("Il y a eu une erreur lors de la réception du message \nFermeture de la connexion ... \n");
             close(descripteur);
             return;
         }        
@@ -372,7 +372,7 @@ void list_message (int descripteur,int nbmess_to_int){
         if (strncmp(message_initial,"ENDM",4) != 0)
             print_joli_message(message_initial);
     }
-    printf("Fin de la reception des messages !\n");
+    printf("Fin de la réception des messages !\n");
     close(descripteur);
 }
 
@@ -396,7 +396,7 @@ void last (){
     if(tout_se_passe_bien == 0){
         list_message(descripteur,nbmess_to_int);
     }else{
-        printf("Il y a eu une erreur de connection, désolé ...\n");
+        printf("Il y a eu une erreur de connexion, désolé ...\n");
         tout_se_passe_bien = 0;
         close(descripteur);
     }
@@ -436,12 +436,12 @@ int connection_multidiffusion (char * machine, int port){
 
 /* Ecoute dans le port de multidiffusion */
 void listen_to_infinity (int descripteur){
-    printf("Commencement de l'ecoute des messages...\n");
+    printf("Commencement de l'écoute des messages...\n");
     char buf [162];
     while(1){
         memset(buf,'\0',162);
         if (recv(descripteur,buf,161,0) < 0){
-            printf("Il y a eu une erreur lors de la réception du message \nFermeture de la connection ... \n");
+            printf("Il y a eu une erreur lors de la réception du message \nFermeture de la connexion ... \n");
             close(descripteur);
             return;
         }
@@ -451,11 +451,11 @@ void listen_to_infinity (int descripteur){
 
 /* Demande une confirmation */
 int demande_confirmation(){
-    printf("Attention, Vous ne pourrez PLUS JAMAIS revenir hors de l'ecoute!\n(sauf en faisant CTRL+C)\n");
-    printf("Voulez vous encore continuez ? Tapez [oui/non]\n");
+    printf("Attention, Vous ne pourrez PLUS JAMAIS revenir hors de l'écoute!\n(sauf en faisant CTRL+C)\n");
+    printf("Voulez vous continuer ? Tapez [oui/non]\n");
     char * confirmation = lire(3);
     while (strcmp(confirmation,"oui") != 0 && strcmp(confirmation,"non")){
-        printf("Voulez vous continuez ? [oui/non]");
+        printf("Voulez vous continuer ? [oui/non]\n");
         confirmation = lire(3);
     }
     if (strcmp(confirmation,"oui") == 0){
@@ -479,32 +479,17 @@ void hear (){
     if(tout_se_passe_bien == 0){
         listen_to_infinity (descripteur);
     }else{
-        printf("Il y a eu une erreur de connection, désolé ...\n");
+        printf("Il y a eu une erreur de connexion, désolé ...\n");
         tout_se_passe_bien = 0;
         close(descripteur);
     }
 }
 
-/* Demande à l'utilisateur le port de la machine */
-int demande_taille_mess (){
-    printf("Attention, vous devez indiquer la taille EXACTE que vous voulez envoyer !\n");
-    int port = 0;
-    while(port == 0){
-        printf("Quelle taille voulez vous envoyer ? [< 9999]\n");
-        char * buf = lire_variable(4);
-        if(est_un_nombre(buf) == 0)
-            port = atoi(buf);
-    }
-    printf("La taille du message est donc de %d\n",port);
-    return port;
-}
-
-
 /* Help */
 void help (){
-    printf("LIST -> Demande à un gestionnaire de diffuseur la liste de ces diffuseurs\n");
+    printf("LIST -> Demande à un gestionnaire de diffuser la liste de ses diffuseurs\n");
     printf("MESS -> Envoie un message à un diffuseur pour qu'il puisse le retransmettre\n");
-    printf("LAST -> Demande à un diffuseur la liste de ces derniers messages\n");
+    printf("LAST -> Demande à un diffuseur la liste de ses derniers messages\n");
     printf("HEAR -> Ecoute dans un port de multidiffusion\n");
     printf("HELP -> Affiche l'aide pour l'utilisateur\n");
     printf("EXIT -> Termine le programme\n");
@@ -532,7 +517,7 @@ void choix_du_service (){
             help ();
         }
         else if (strcmp(commande,"EXIT") == 0){
-            printf("Merci d'avoir utiliser notre service, à la prochaine !\n");
+            printf("Merci d'avoir utilisé notre service, à la prochaine !\n");
             exit (0);
         }
     }
