@@ -27,10 +27,10 @@ struct client {
 // test : REGI 48484848 123.123.123.123 1234 123.123.123.124 1523\r\n
 typedef struct diffuseur {
     char  * id;     //Taille 8
-    char * ip1;     //Taille 15
-    char * port1;   //Taille 4
-    char * ip2 ;    //Taille 15
-    char * port2;   //Taille 4
+    char * ip1;     //Taille 15, adresse multidiffusion
+    char * port1;   //Taille 4, port multidiffusion
+    char * ip2 ;    //Taille 15, adresse écoute
+    char * port2;   //Taille 4, port écoute
     int index;
 }diffuseur;
 
@@ -68,17 +68,17 @@ void afficheListeDiffuseur (){
 
             printf("ID : %s\n",tmpId);
 
-            printf("IP1 : %s\n",tmpIp);
+            printf("ADRESSE MULTIDIFFUSION : %s\n",tmpIp);
 
             memset (tmpIp, '\0', IP + 1);
             strncat (tmpIp, list_diffuseur[i].ip2, IP);
-            printf("IP2 : %s\n",tmpIp);
+            printf("ADRESSE D'ECOUTE : %s\n",tmpIp);
 
-            printf("PORT1 : %s\n",tmpPort);
+            printf("PORT DE MULTIDIFFUSION : %s\n",tmpPort);
 
             memset (tmpPort, '\0', PORT + 1);
             strncat (tmpPort, list_diffuseur[i].port2, PORT);
-            printf("PORT2 : %s\n\n",tmpPort);
+            printf("PORT D'ECOUTE : %s\n\n",tmpPort);
         }
     }
     free (tmpId);
@@ -106,7 +106,7 @@ int ajoutDiffuseur (diffuseur d){
         }
     }
     free (buff);
-    printf("bug ajout diffuseur");
+    printf("Bug lors de l'ajout du diffuseur");
     return -1;
 }
 
@@ -207,13 +207,13 @@ void ca_va(int descripteur,char * buff){
         send(descripteur, "RUOK\r\n", 6, 0);
         sleep(10);
         recv(descripteur,buff_cava, 6,0);
-        printf("buff ca va : %s\n", buff_cava);
+        printf("Buffer reçu : %s\n", buff_cava);
         
         if (strncmp(buff_cava, "IMOK", 4) == 0){
             printf("Bonne réponse, je continue.\n");
             continue;
         }else{
-            printf("Mauvaise réponse, adios.\n");
+            printf("Mauvaise réponse, au revoir Diffuseur.\n");
             break;
         }
     }
@@ -223,14 +223,14 @@ void ca_va(int descripteur,char * buff){
 
 void envoieListe (int descripteur, int nbDiffuseur, char * envoieNumDiff, char * buffDiffuseur){
     nbDiffuseur = diffuseurPresent();
-    printf("nbdiffuseur présent : %d\n",nbDiffuseur);
+    printf("Nombre de diffuseur présent : %d\n",nbDiffuseur);
     sprintf(envoieNumDiff,"LINB %s\r\n",verifNombre(nbDiffuseur));
     send(descripteur,envoieNumDiff, 9, 0);
-    printf("Message d'envoieNumdiffuseur : %s\n",envoieNumDiff);
+    printf("Message d'envoie Numdiffuseur : %s\n",envoieNumDiff);
 
     for(int i = 0; i < MAX_DIFFUSEUR; i++){
         if(strcmp(list_diffuseur[i].id, "") != 0){
-            memset(buffDiffuseur,'\0',TAILLE_MSG + 1);
+            memset(buffDiffuseur,'\0',TAILLE_MSG + 5);
             memcpy(buffDiffuseur, "ITEM ", 5);
             memcpy(buffDiffuseur + 5, list_diffuseur[i].id, ID);
             memcpy(buffDiffuseur + 5 + ID, " ", 1);
@@ -241,12 +241,13 @@ void envoieListe (int descripteur, int nbDiffuseur, char * envoieNumDiff, char *
             memcpy(buffDiffuseur + 5 + ID + 1 + IP + 1 + PORT + 1, list_diffuseur[i].ip2, IP);
             memcpy(buffDiffuseur + 5 + ID + 1 + IP + 1 + PORT + 1 + IP, " ", 1);
             memcpy(buffDiffuseur + 5 + ID + 1 + IP + 1 + PORT + 1 + IP + 1, list_diffuseur[i].port2, PORT);
+            memcpy(buffDiffuseur + 5 + ID + 1 + IP + 1 + PORT + 1 + IP + 1 + PORT, "\r\n", 2);
 
-            printf("buffDiffuseur : %s\n",buffDiffuseur);
+            printf("Liste message envoyé : %s\n",buffDiffuseur);
 
-            int r = send(descripteur,buffDiffuseur, TAILLE_MSG, 0);
+            int r = send(descripteur,buffDiffuseur, TAILLE_MSG+2, 0);
             if (r < 0){
-                printf("erreur sur l'envoie des listes de diffuseurs");
+                printf("Erreur sur l'envoie des listes de diffuseurs");
             }
         }
     }
@@ -264,19 +265,19 @@ void*communication(void *arg){
 
     int nbDiffuseur = 0;
 
-    //buff pour le diffuseur + 1 au cas où
-    char * buffDiffuseur = malloc (sizeof(char) * TAILLE_MSG + 1);
-    memset(buffDiffuseur,'\0',TAILLE_MSG + 1);
+    //buff pour le diffuseur + 5 au cas où
+    char * buffDiffuseur = malloc (sizeof(char) * TAILLE_MSG + 5); 
+    memset(buffDiffuseur,'\0',TAILLE_MSG + 5);
 
-    //LIMB + espace + nb entre 00 à 99 + 1 au cas où = 8
-    char * envoieNumDiff = malloc (sizeof(char) * 8);
-    memset(envoieNumDiff,'\0', 8);
+    //LIMB + espace + nb entre 00 à 99 + 1 au cas où = 10
+    char * envoieNumDiff = malloc (sizeof(char) * 10);
+    memset(envoieNumDiff,'\0', 10);
 
     //reception du message dans le buff
     int r = recv(descripteur,buff,(TAILLE_MAX_BUFFER)*sizeof(char),0);
 
     if (r <= 0){
-        printf("Message vide, Fin de la connection ...\n");
+        printf("Message vide, Fin de la connexion ...\n");
     }
 
     //condition REGI
@@ -294,7 +295,7 @@ void*communication(void *arg){
     }else if ((strncmp(buff, "LIST\r\n", 6) == 0) && r == 6){
 
         printf("Condition LIST\n");
-        envoieListe (descripteur, nbDiffuseur, envoieNumDiff, buffDiffuseur);
+        envoieListe(descripteur, nbDiffuseur, envoieNumDiff, buffDiffuseur);
         printf("Fin d'envoie de LIST\n");
 
     //condition MESS, le message doit être de taille 156
@@ -307,7 +308,7 @@ void*communication(void *arg){
 
     }else{
         printf("Votre message : %s\n",buff);
-        printf ("Mauvais format du message, fermeture de la connection\n");
+        printf("Mauvais format du message, fermeture de la connexion\n");
     }
     free (buff);
     free (buffDiffuseur);
@@ -320,7 +321,7 @@ void*communication(void *arg){
 
 int main(int argc, char**argv) {
     if(argc!=2){
-        printf("Erreur il faut fournir un numero de port");
+        printf("Erreur il faut fournir un numero de port\n");
         return 0;
     }
     //remplissage d'une liste vide de diffuseur
