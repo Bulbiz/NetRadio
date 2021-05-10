@@ -44,6 +44,27 @@ Diffuseur (en prenant en compte que le gestionnaire et le diffuseur sont exécut
 - Avec fichier message : `java src/Diffuseur Beel 7766 5858 225.030.020.010 4646 192.168.070.236 192.168.070.236 bubs.txt`
 Attention, les adresses doivent faire exactement 15 caractères sinon le programme ne se lancera pas
 
+## Architecture du code :
+Le projet a été divisé en 3 grandes parties :
+- En C le gestionnaire et le client
+- En java le diffuseur
+
+### Gestionnaire
+Le gestionnaire est composé d'une liste de diffuseur qu'il consulte ou modifie en ajoutant de nouveaux diffuseurs en fonction des
+besoins. Il possède un thread principal qui crée des threads secondaires pour chaque communication effectuées sur celui-ci.
+Chacun de ces threads secondaires gère une fonctionnalité avec soit un client, soit un diffuseur.
+
+### Client
+Le client est constitué d'un ensemble de fonctions qui permettent de se connecter à un port et d'envoyer le message voulu.
+Il contient également une interface textuelle pour faciliter la communication entre les différentes composantes.
+
+### Diffuseur
+Le diffuseur se compose en 3 fichiers sources, le fichier `DiffuseMulticast.java` contenant un thread qui gère le multicast en UDP,
+le fichier `EcouteUtilisateur.java` contenant également un autre thread qui reste en écoute sur un port donné pour traiter
+les opérations du client (Ex : MESS, LAST) et le fichier `Diffuseur.java` qui contient le `main` du diffuseur et va construire
+les 2 threads mentionnés plus tôt. Il est également doté d'un thread pour la communication avec le gestionnaire qui est lancé dès
+l'exécution du diffuseur.
+
 ## Extension :
 Un client est autorisé à envoyer un message à un gestionnaire qui devra le transmettre à tous ses diffuseurs. 
 Il suffit d'utiliser la commande MESS du client et d'indiquer l'adresse et le port du gestionnaire.
